@@ -89,11 +89,13 @@ vector<parton> particletarg;
 vector<parton> allparticles;
 vector<float> participantplane;
 vector<float> eccentricity;
+vector<float> psi3plane;
 
 // This vector holds the information needed for the v2 calculations.
 vector<fpartons> finalstate;
 
 float psi2;
+float psi3;
 float phi;
 float pT;
 float smearpsi2;
@@ -112,6 +114,8 @@ void calculateParticipantPlane() {
 	// Variables used in the calculation of psi2.
 	float q2x = 0;
 	float q2y = 0;
+	float q3x = 0;
+	float q3y = 0;
 	float e21 = 0;
 	float e22 = 0;
 	float e2 = 0;
@@ -143,6 +147,10 @@ void calculateParticipantPlane() {
 	 		q2x = q2x + pow(sr,2)*TMath::Cos(2*sphi);
 	 		q2y = q2y + pow(sr,2)*TMath::Sin(2*sphi);
 
+			// v3 calculation pieces.
+			q3x = q3x + pow(sr,2)*TMath::Cos(3*sphi);
+			q3y = q3y + pow(sr,2)*TMath::Sin(3*sphi);
+
 	 		// For eccentricity calculations
 
 	 		e21 = e21 + sr*sr*TMath::Cos(2*sphi);
@@ -157,25 +165,34 @@ void calculateParticipantPlane() {
 
 	 q2x = q2x/nparton;
 	 q2y = q2y/nparton;
+
+	 q3x = q3x/nparton;
+	 q3y = q3y/nparton;
+
 	 e21 = e21/nparton;
 	 e22 = e22/nparton;
      rsqure = rsqure/nparton;
 
 	 psi2 = (TMath::ATan2(e22, e21)/2.0) + (TMath::Pi()/2.0);
 
+	 //v3 plane.
+	 psi3 = (TMath::ATan2(q3y, q3x)/3.0) + (TMath::Pi()/3.0);
+
 	 //cout << ":::::::" << psi2 << endl;
 	 e2 = (TMath::Sqrt(e21*e21 + e22*e22)/rsqure); 
 
 	 participantplane.push_back(psi2);
+	 psi3plane.push_back(psi3);
 	 eccentricity.push_back(e2);
 
 	//cout << participantplane.size() << endl;
 
 }
 // This function does the actual v2 calculation.
-void calculateFlow(int &eventcounter, TProfile *v2plot) {
+void calculateFlow(int &eventcounter, TProfile *v2plot, TProfile *v3plot) {
 
 	float v2;
+	float v3;
 	// This value used to set the participant plane by event.
 	int increment = eventcounter;
 
@@ -190,6 +207,10 @@ void calculateFlow(int &eventcounter, TProfile *v2plot) {
 			v2 = TMath::Cos(2*(finalstate[j].phi - participantplane[increment-1]));
 			// Filling the TProfile.
 			v2plot->Fill(finalstate[j].pT,v2);
+
+			v3 = TMath::Cos(3*(finalstate[j].phi - psi3plane[increment-1]));
+			// Filling v3 TProfile.
+			v3plot->Fill(finalstate[j].pT,v3);
 
 		}
 	}
@@ -318,6 +339,11 @@ void newcalculateEllipticFlow(void) {
 
 	TProfile *v2plot = new TProfile("v2plot","v_{2} vs p_{T}",20,0,2.5,-1,1);
 
+	TCanvas *c1 = new TCanvas("c1","v3 calculations",700,700);
+	gStyle->SetOptStat(0);
+
+	TProfile *v3plot = new TProfile("v3plot","v_{3} vs p_{T}",20,0,2.5,-1,1);
+
 	// Reading in file 2.
 	while (std::getline(myPacFile, line1)) {
 
@@ -378,7 +404,7 @@ void newcalculateEllipticFlow(void) {
 
 			if (counterparton == participantparton) {
 
-				calculateFlow(eventcounter,v2plot);
+			  calculateFlow(eventcounter,v2plot,v3plot);
 
 				finalstate.clear();
 				counterparton = 0;
@@ -387,11 +413,18 @@ void newcalculateEllipticFlow(void) {
 		}
 	}
 
+	c->cd();
 	v2plot->SetLineWidth(2);
 	v2plot->SetLineColor(kBlack);
 	v2plot->Draw();
+
+	c1->cd();
+	v3plot->SetLineWidth(2);
+	v3plot->SetLineColor(kBlack);
+	v3plot->Draw();
 	TFile *f = new TFile("out_newcalculateEllipticFlow.root","RECREATE");
 	v2plot->Write();
+	v3plot->Write();
 	f->Close();
 
 	for (unsigned int i = 0; i < eccentricity.size(); i++){
