@@ -6,6 +6,7 @@
 //File 2: parton-collisionHistory_1.dat
 //
 //05-21-18
+//Updated 07-09-18
 //------------------------------------------------------------------------------------------
 
 #include "TLatex.h"
@@ -83,6 +84,8 @@ struct phistuff {
 	float phi;
 // pT values
 	float pT;
+  //eta values
+  float eta;
 };
 
 
@@ -156,8 +159,8 @@ void calculateParticipantPlane() {
 
 	 		// For eccentricity calculations
 
-	 		e21 = e21 + sr*sr*TMath::Cos(2*sphi);
-	 		e22 = e22 + sr*sr*TMath::Sin(2*sphi);
+	 		e21 = e21 + pow(sr,2)*TMath::Cos(2*sphi);
+	 		e22 = e22 + pow(sr,2)*TMath::Sin(2*sphi);
 	 		rsqure = rsqure + pow(sr,2);
 
 	 		nparton++;
@@ -175,7 +178,7 @@ void calculateParticipantPlane() {
 	 psi2 = (TMath::ATan2(e22, e21)/2.0) + (TMath::Pi()/2.0);
 
 	 //cout << ":::::::" << psi2 << endl;
-	 e2 = (TMath::Sqrt(e21*e21 + e22*e22)/rsqure); 
+	 e2 = (TMath::Sqrt(pow(e21,2) + pow(e22,2))/rsqure); 
 
 	 participantplane.push_back(psi2);
 	 eccentricity.push_back(e2);
@@ -192,14 +195,17 @@ void calculatePhiValues() {
 
 	for (unsigned int i = 0; i < p.size(); i++) {
 
-	  if ((abs(p[i].PID) == abs(211)) || (abs(p[i].PID) == abs(2212)) || (abs(p[i].PID) == abs(321))) {
+	  if ((fabs(p[i].PID) == 211) || (fabs(p[i].PID) == 2212) || (fabs(p[i].PID) == 321)) {
 		  
 		  if ((p[i].px == 0) && (p[i].py == 0)) {
 		    continue;
 		  }
-			
-			phi = TMath::ATan2(p[i].py, p[i].px);
-			pT = TMath::Sqrt(pow(p[i].px,2) + pow(p[i].py,2));
+		  float phienergy = TMath::Sqrt(pow(p[i].px,2) + pow(p[i].py,2) + pow(p[i].pz,2) + pow(p[i].m,2));
+
+		  TLorentzVector ev(p[i].px, p[i].py, p[i].pz, phienergy);
+
+		  //phi = TMath::ATan2(p[i].py, p[i].px);
+		  //pT = TMath::Sqrt(pow(p[i].px,2) + pow(p[i].py,2));
 
 			/*if (p[i].evtnumber == 1) {
 				cout << p[i].PID << ",   " << phi << endl;
@@ -207,8 +213,9 @@ void calculatePhiValues() {
 
 			phistuff phitotal;
 			phitotal.evtN = p[i].evtnumber;
-			phitotal.phi = phi;
-			phitotal.pT = pT;
+			phitotal.phi = ev.Phi();
+			phitotal.pT = ev.Pt();
+			phitotal.eta = ev.Eta();
 
 			phivalues.push_back(phitotal);
 
@@ -236,9 +243,13 @@ void calculateFlow() {
 		for (unsigned int j = 0; j < phivalues.size(); j++) {
 
 			if (phivalues[j].evtN == (i+1)) {
+			  
+			  if (fabs(phivalues[j].eta) < 1) {
 
 				v2 = TMath::Cos(2*(phivalues[j].phi - participantplane[i]));
 				v2plot->Fill(phivalues[j].pT,v2,1);
+			  }
+
 			}
 		}
 
