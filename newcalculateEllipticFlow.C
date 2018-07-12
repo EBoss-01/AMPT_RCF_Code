@@ -2,10 +2,11 @@
 //This code is designed to read in files from AMPT to calculate the elliptic flow.
 //This version uses partons for the calculation of v2 instead of final state particles.
 //
-//File 1: npart-xy.dat
+//File 1: parton-initial-afterPropagation.dat
 //File 2: parton-after-coalescence.dat
 //
 //07-05-2018
+// Updated: 07-12-18
 //------------------------------------------------------------------------------------------
 
 #include "TLatex.h"
@@ -48,12 +49,22 @@ using namespace std;
 struct parton {
 // Event Number
 	int evtN;
-// Parton initial location (from npart-xy.dat)
+// Parton ID
+	int PID;
+// Mometa at birth
+	float px;
+	float py;
+	float pz;
+// Mass of parton
+	float m;
+// Parton initial location
 	float x;
 	float y;
-//Parton sequence and status
-	int seq;
-	int status;
+	float z;
+	float t;
+// Other
+	int eta;
+	int pT;
 
 };
 
@@ -79,28 +90,23 @@ struct fpartons {
 // Variables
 //----------------------------------
 
-// This is the counter to keep track of which event is being read.
+// Event Counter
 int eventnumber = 0;
-
-// Vectors for the projectile and the target.
-vector<parton> particleproj;
-vector<parton> particletarg;
-// This vector will contain both the target and projectile in one vector.
-vector<parton> allparticles;
-vector<float> participantplane;
-vector<float> eccentricity;
-vector<float> psi3plane;
-
+// Vectors
+vector<parton> initialpartons;
+vector<float> psi2values;
+vector<float> epsilon2values;
+vector<float> psi3values;
+vector<float> epsilon3values;
 // This vector holds the information needed for the v2 calculations.
 vector<fpartons> finalstate;
 
 float psi2;
 float psi3;
-float phi;
-float pT;
-float smearpsi2;
 float AverageE2;
+float AverageE3;
 float TotalE2;
+float TotalE3;
 
 //----------------------------------
 //Functions
@@ -109,106 +115,87 @@ float TotalE2;
 // This function does the calculation for the Participant plane to be used in the calculation of v2.
 void calculateParticipantPlane() {
 
-	// This is a counter to enable getting an average.
-	int nparton = 0;
-	// Variables used in the calculation of psi2.
+	// Variables for calculations.
+	float cmx = 0;
+	float cmy = 0;
 	float q2x = 0;
 	float q2y = 0;
 	float q3x = 0;
 	float q3y = 0;
-	float e21 = 0;
-	float e22 = 0;
-	float e2 = 0;
-	float rsqure = 0;
+	float epsilon2 = 0;
+	float epsilon3 = 0;
+	float rsquare = 0;
 
-	TF1 *fradial = new TF1("fradial","x*TMath::Exp(-x*x/(2*[0]*[0]))",0.0,2.0);
-	fradial->SetParameter(0,0.4);
+	// Vector used for CM adjustment
+	vector<parton> v = initialpartons;
 
-	TF1 *fphi = new TF1("fphi","1.0",0.0,2.0*TMath::Pi());
+	for (unsigned int k = 0; k < v.size(); k++) {
+		cmx = cmx + v[k].x;
+		cmy = cmy + v[k].y;
+	}
 
-	vector<parton> v = allparticles;
+	int nparton = v.size();
 
-	 for (unsigned int i = 0; i < v.size(); i++) {
+	cmx = cmx/(float)nparton;
+	cmy = cmy/(float)nparton;
 
-	 	if (v[i].status > 0) {
+	for (unsigned int i = 0; i < v.size(); i++) {
 
-	 		float phi1 = TMath::ATan2(v[i].y, v[i].x);
-	 		float r = TMath::Sqrt(pow(v[i].x,2) + pow(v[i].y,2));
+		v[i].x = v[i].x - cmx;
+		v[i].y = v[i].y - cmy;
 
-	 		float rtemp = fradial->GetRandom();
-	 		float phitemp = fphi->GetRandom();
+	 	float phivalue = TMath::ATan2(v[i].y, v[i].x);
+	 	float rvalue = TMath::Sqrt(pow(v[i].x,2) + pow(v[i].y,2));
+	 	//Compnent calculations for psi.
+	 	q2x = q2x + pow(rvalue,2)*TMath::Cos(2*phivalue);
+	 	q2y = q2y + pow(rvalue,2)*TMath::Sin(2*phivalue);
+		q3x = q3x + pow(rvalue,2)*TMath::Cos(3*phivalue);
+		q3y = q3y + pow(rvalue,2)*TMath::Sin(3*phivalue);
+		rsquare = rsquare + pow(rvalue,2);
+	}
 
-	 		float qxtemp = v[i].x + rtemp*TMath::Sin(phitemp);
-	 		float qytemp = v[i].y + rtemp*TMath::Cos(phitemp);
+	// Averaging components
+	q2x = q2x/(float)nparton;
+	q2y = q2y/(float)nparton;
+	q3x = q3x/(float)nparton;
+	q3y = q3y/(float)nparton;
+    rsquare = rsquare/(float)nparton;
 
-	 		float sr = TMath::Sqrt(pow(qxtemp,2) + pow(qytemp,2));
-	 		float sphi = TMath::ATan2(qytemp, qxtemp);
-
-	 		q2x = q2x + pow(sr,2)*TMath::Cos(2*sphi);
-	 		q2y = q2y + pow(sr,2)*TMath::Sin(2*sphi);
-
-			// v3 calculation pieces.
-			q3x = q3x + pow(sr,2)*TMath::Cos(3*sphi);
-			q3y = q3y + pow(sr,2)*TMath::Sin(3*sphi);
-
-	 		// For eccentricity calculations
-
-	 		e21 = e21 + sr*sr*TMath::Cos(2*sphi);
-	 		e22 = e22 + sr*sr*TMath::Sin(2*sphi);
-	 		rsqure = rsqure + pow(sr,2);
-
-	 		nparton++;
-	 	}
-	 }
-
-	 //cout << nparton << endl;
-
-	 q2x = q2x/nparton;
-	 q2y = q2y/nparton;
-
-	 q3x = q3x/nparton;
-	 q3y = q3y/nparton;
-
-	 e21 = e21/nparton;
-	 e22 = e22/nparton;
-     rsqure = rsqure/nparton;
-
-	 psi2 = (TMath::ATan2(e22, e21)/2.0) + (TMath::Pi()/2.0);
-
-	 //v3 plane.
-	 psi3 = (TMath::ATan2(q3y, q3x)/3.0) + (TMath::Pi()/3.0);
-
-	 //cout << ":::::::" << psi2 << endl;
-	 e2 = (TMath::Sqrt(e21*e21 + e22*e22)/rsqure); 
-
-	 participantplane.push_back(psi2);
-	 psi3plane.push_back(psi3);
-	 eccentricity.push_back(e2);
-
-	//cout << participantplane.size() << endl;
-
+    // Participant Plane calculations
+	psi2 = (TMath::ATan2(q2y, q2x)/2.0) + (TMath::Pi()/2.0);
+	psi3 = (TMath::ATan2(q3y, q3x)/3.0) + (TMath::Pi()/3.0);
+	// Eccentricity calculations
+	epsilon2 = (TMath::Sqrt(pow(q2x,2) + pow(q2y,2)))/rsquare;
+	epsilon3 = (TMath::Sqrt(pow(q3x,2) + pow(q3y,2)))/rsquare;
+	// Pushing the values to more vectors
+	psi2values.push_back(psi2);
+	psi3values.push_back(psi3);
+	epsilon2values.push_back(epsilon2);
+	epsilon3values.push_back(epsilon3);
 }
 // This function does the actual v2 calculation.
 void calculateFlow(int &eventcounter, TProfile *v2plot, TProfile *v3plot) {
 
-	float v2;
-	float v3;
+	float v2 = 0;
+	float v3 = 0;
 	// This value used to set the participant plane by event.
 	int increment = eventcounter;
 
 	// This loop goes through all the partons for an event.
 	for (unsigned int j = 0; j < finalstate.size(); j++) {
 
+		if (finalstate[j].pT < 0.0001) {
+			continue;
+		}
+
 		// This is the rapidity cut.
-		if (finalstate[j].eta < 1 && finalstate[j].eta > -1) {
+		if (fabs(finalstate[j].eta) < 2) {
 
-		  //cout << increment << "     " << participantplane[increment-1] << endl;
-
-			v2 = TMath::Cos(2*(finalstate[j].phi - participantplane[increment-1]));
+			v2 = TMath::Cos(2*(finalstate[j].phi - psi2values[increment-1]));
 			// Filling the TProfile.
 			v2plot->Fill(finalstate[j].pT,v2);
 
-			v3 = TMath::Cos(3*(finalstate[j].phi - psi3plane[increment-1]));
+			v3 = TMath::Cos(3*(finalstate[j].phi - psi3values[increment-1]));
 			// Filling v3 TProfile.
 			v3plot->Fill(finalstate[j].pT,v3);
 
@@ -222,17 +209,21 @@ void newcalculateEllipticFlow(void) {
 	// Information needed to read the event header.
 	string line;
 	int iterationN;
-	int atomicMproj;
-	int atomicMtarg;
-	int impactparm;
-	float space[2];
-	int sequence;
-	int stat;
-	float junk[3];
+	int partonsN;
+	int baryonsN;
+	int mesonsN;
+	int particlesN;
+	int nonpartparticles;
+	// Needed for lines after header
+	int pid;
+	float momentas[3];
+	float pmass;
+	float spacetime[4];
+	// File initialization
 	ifstream myInitialFileInfo;
 	ifstream myPacFile;
 
-	myInitialFileInfo.open("ana/npart-xy.dat");
+	myInitialFileInfo.open("ana/parton-initial-afterPropagation.dat");
 
 	if (!myInitialFileInfo) {
 	// This will let me know if the file fails to open and specifically which file.
@@ -252,38 +243,36 @@ void newcalculateEllipticFlow(void) {
 
 		stringstream heading(line);
 
-		if (heading >> eventnumber >> iterationN >> atomicMproj >> atomicMtarg >> impactparm) {
+		if (heading >> eventnumber >> iterationN >> partonsN >> baryonsN >> mesonsN >> particlesN >> nonpartparticles) {
 
 			if (iterationN > 0) {
 				continue;
 			}
 
-			int partoncounter = 0;
-
 			// This loop fills in the initial information for each parton.
-			for (int i = 0; i < (atomicMproj + atomicMtarg); i++) {
+			for (int i = 0; i < partonsN; i++) {
 
-				myInitialFileInfo >> space[0] >> space[1] >> sequence >> stat >> junk[0] >> junk[1] >> junk[2];
+				myInitialFileInfo >> pid >> momentas[0] >> momentas[1] >> momentas[2] >> pmass >> spacetime[0] >> spacetime[1] >> spacetime[2] >> spacetime[3];
 
-				parton partinfo;
-				partinfo.evtN = eventnumber;
-				partinfo.x = space[0];
-				partinfo.y = space[1];
-				partinfo.seq = sequence;
-				partinfo.status = stat;
+				float energy1 = TMath::Sqrt(pow(momentas[0],2) + pow(momentas[1],2) + pow(momentas[2],2) + pow(pmass,2));
+				TLorentzVector cut(momentas[0], momentas[1], momentas[2], energy1);
 
-				allparticles.push_back(partinfo);
+				parton partinitial;
+				partinitial.evtN = eventnumber;
+				partinitial.PID = pid;
+				partinitial.px = momentas[0];
+				partinitial.py = momentas[1];
+				partinitial.pz = momentas[2];
+				partinitial.m = pmass;
+				partinitial.x = spacetime[0];
+				partinitial.y = spacetime[1];
+				partinitial.z = spacetime[2];
+				partinitial.t = spacetime[3];
+				partinitial.eta = cut.Eta();
+				partinitial.pT = cut.Pt();
 
-				if (sequence > 0) {
-					particleproj.push_back(partinfo);
-				}
-				else if (sequence < 0) {
-					particletarg.push_back(partinfo);
-				}
-
-				if (stat > 0 && sequence > 0) {
-					partoncounter = partoncounter;
-					partoncounter++;
+				if (fabs(partinitial.eta) < 3 && partinitial.t < 3) {
+					initialpartons.push_back(partinitial);
 				}
 			}
 
@@ -291,9 +280,7 @@ void newcalculateEllipticFlow(void) {
 			calculateParticipantPlane();
 
 			// Clearing vectors at the end of an event.
-			allparticles.clear();
-			particleproj.clear();
-			particletarg.clear();
+			initialpartons.clear();
 		}
 
 	}
@@ -336,12 +323,10 @@ void newcalculateEllipticFlow(void) {
 	// Creation of the TCanvas and TProfile.
 	TCanvas *c = new TCanvas("c","v2 calculations",700,700);
 	gStyle->SetOptStat(0);
-
 	TProfile *v2plot = new TProfile("v2plot","v_{2} vs p_{T}",20,0,2.5,-1,1);
 
 	TCanvas *c1 = new TCanvas("c1","v3 calculations",700,700);
 	gStyle->SetOptStat(0);
-
 	TProfile *v3plot = new TProfile("v3plot","v_{3} vs p_{T}",20,0,2.5,-1,1);
 
 	// Reading in file 2.
@@ -427,15 +412,19 @@ void newcalculateEllipticFlow(void) {
 	v3plot->Write();
 	f->Close();
 
-	for (unsigned int i = 0; i < eccentricity.size(); i++){
+	for (unsigned int i = 0; i < epsilon2values.size(); i++){
 	  
-	  TotalE2 = TotalE2 + eccentricity[i];
+	  TotalE2 = TotalE2 + epsilon2values[i];
+	  TotalE3 = TotalE3 + epsilon3values[i];
 	}
 
-	int totalevents = eccentricity.size();
+	int totalevents = epsilon2values.size();
 
 	AverageE2 = TotalE2/float(totalevents);
+	AverageE3 = TotalE3/float(totalevents);
+
 	cout << "Average Epsilon 2: " << AverageE2 << endl;
+	cout << "Average Epsilon 3: " << AverageE3 << endl;
 
 	myPacFile.close();
 
