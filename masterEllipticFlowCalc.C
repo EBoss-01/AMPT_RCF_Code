@@ -12,7 +12,7 @@
 // Flagpsi = 1, uses nucleons and tform = const.
 //
 // 07-16-2018
-// Updated 07-18-18
+// Updated 07-18-18 (Now calculates psi2 using both methods at all times.)
 //--------------------------------------------------------------------------------------------
 
 #include "TLatex.h"
@@ -165,9 +165,8 @@ float TotalE3nucleon;
 // Functions
 //-------------------------------------
 
-void calculateParticipantPlane() {
+void calculateParticipantPlanePartons() {
 
-	int nucleoncounter = 0;
 	int cmcounter = 0;
 	float cmx = 0;
 	float cmy = 0;
@@ -179,119 +178,129 @@ void calculateParticipantPlane() {
 	float epsilon3 = 0;
 	float rsquare = 0;
 
+	vector<parton> v = initialpartons;
+
+	for (unsigned int k = 0; k < v.size(); k++) {
+		cmx = cmx + v[k].x;
+		cmy = cmy + v[k].y;
+	}
+
+	int ncounter = v.size();
+
+	cmx = cmx/(float)ncounter;
+	cmy = cmy/(float)ncounter;
+
+	for (unsigned int i = 0; i < v.size(); i++) {
+
+		v[i].x = v[i].x - cmx;
+		v[i].y = v[i].y - cmy;
+
+		float phivalue = TMath::ATan2(v[i].y, v[i].x);
+		float rvalue = TMath::Sqrt(pow(v[i].x,2) + pow(v[i].y,2));
+		//Compnent calculations for psi.
+		q2x = q2x + pow(rvalue,2)*TMath::Cos(2*phivalue);
+		q2y = q2y + pow(rvalue,2)*TMath::Sin(2*phivalue);
+		q3x = q3x + pow(rvalue,2)*TMath::Cos(3*phivalue);
+		q3y = q3y + pow(rvalue,2)*TMath::Sin(3*phivalue);
+		rsquare = rsquare + pow(rvalue,2);
+	}
+
+	// Averaging components
+	q2x = q2x/(float)ncounter;
+	q2y = q2y/(float)ncounter;
+	q3x = q3x/(float)ncounter;
+	q3y = q3y/(float)ncounter;
+    rsquare = rsquare/(float)ncounter;
+
+    // Participant Plane calculations
+	psi2partons = (TMath::ATan2(q2y, q2x)/2.0) + (TMath::Pi()/2.0);
+	psi3partons = (TMath::ATan2(q3y, q3x)/3.0) + (TMath::Pi()/3.0);
+	// Eccentricity calculations
+	epsilon2 = (TMath::Sqrt(pow(q2x,2) + pow(q2y,2)))/rsquare;
+	epsilon3 = (TMath::Sqrt(pow(q3x,2) + pow(q3y,2)))/rsquare;
+	// Pushing the values to more vectors
+	psi2valuespartons.push_back(psi2partons);
+	psi3valuespartons.push_back(psi3partons);
+	epsilon2valuespartons.push_back(epsilon2);
+	epsilon3valuespartons.push_back(epsilon3);
+}
+
+void calculateParticipantPlaneNucleons() {
+
+	int nucleoncounter = 0;
+	int Ncmcounter = 0;
+	float Ncmx = 0;
+	float Ncmy = 0;
+	float Nq2x = 0;
+	float Nq2y = 0;
+	float Nq3x = 0;
+	float Nq3y = 0;
+	float Nepsilon2 = 0;
+	float Nepsilon3 = 0;
+	float Nrsquare = 0;
+
 	TF1 *fradial = new TF1("fradial","x*TMath::Exp(-x*x/(2*[0]*[0]))",0.0,2.0);
 	fradial->SetParameter(0,0.4);
 
 	TF1 *fphi = new TF1("fphi","1.0",0.0,2.0*TMath::Pi());
 
-	if (setFlag == 0) {
+	vector<nucleon> vN = initialnucleon;
 
-		vector<parton> v = initialpartons;
+	for (unsigned int k = 0; k < vN.size(); k++) {
+		if (vN[k].status > 0) {
+			Ncmx = Ncmx + vN[k].x;
+			Ncmy = Ncmy + vN[k].y;
 
-		for (unsigned int k = 0; k < v.size(); k++) {
-		cmx = cmx + v[k].x;
-		cmy = cmy + v[k].y;
+			Ncmcounter++;
 		}
-
-		int ncounter = v.size();
-
-		cmx = cmx/(float)ncounter;
-		cmy = cmy/(float)ncounter;
-
-		for (unsigned int i = 0; i < v.size(); i++) {
-
-			v[i].x = v[i].x - cmx;
-			v[i].y = v[i].y - cmy;
-
-	 		float phivalue = TMath::ATan2(v[i].y, v[i].x);
-	 		float rvalue = TMath::Sqrt(pow(v[i].x,2) + pow(v[i].y,2));
-	 		//Compnent calculations for psi.
-	 		q2x = q2x + pow(rvalue,2)*TMath::Cos(2*phivalue);
-	 		q2y = q2y + pow(rvalue,2)*TMath::Sin(2*phivalue);
-			q3x = q3x + pow(rvalue,2)*TMath::Cos(3*phivalue);
-			q3y = q3y + pow(rvalue,2)*TMath::Sin(3*phivalue);
-			rsquare = rsquare + pow(rvalue,2);
-		}
-
-		// Averaging components
-		q2x = q2x/(float)ncounter;
-		q2y = q2y/(float)ncounter;
-		q3x = q3x/(float)ncounter;
-		q3y = q3y/(float)ncounter;
-    	rsquare = rsquare/(float)ncounter;
-
-    	// Participant Plane calculations
-		psi2partons = (TMath::ATan2(q2y, q2x)/2.0) + (TMath::Pi()/2.0);
-		psi3partons = (TMath::ATan2(q3y, q3x)/3.0) + (TMath::Pi()/3.0);
-		// Eccentricity calculations
-		epsilon2 = (TMath::Sqrt(pow(q2x,2) + pow(q2y,2)))/rsquare;
-		epsilon3 = (TMath::Sqrt(pow(q3x,2) + pow(q3y,2)))/rsquare;
-		// Pushing the values to more vectors
-		psi2valuespartons.push_back(psi2partons);
-		psi3valuespartons.push_back(psi3partons);
-		epsilon2valuespartons.push_back(epsilon2);
-		epsilon3valuespartons.push_back(epsilon3);
 	}
-	else if (setFlag == 1) {
 
-		vector<nucleon> v = initialnucleon;
+	Ncmx = Ncmx/(float)Ncmcounter;
+	Ncmy = Ncmy/(float)Ncmcounter;
 
-		for (unsigned int k = 0; k < v.size(); k++) {
-			if (v[k].status > 0) {
-				cmx = cmx + v[k].x;
-				cmy = cmy + v[k].y;
+	for (unsigned int i = 0; i < vN.size(); i++) {
 
-				cmcounter++;
-			}
-		}
+		if (vN[i].status > 0) {
 
-		cmx = cmx/(float)cmcounter;
-		cmy = cmy/(float)cmcounter;
+	 		vN[i].x = vN[i].x - Ncmx;
+	 		vN[i].y = vN[i].y - Ncmy;
 
-		for (unsigned int i = 0; i < v.size(); i++) {
+	 		float rtemp = fradial->GetRandom();
+	 		float phitemp = fphi->GetRandom();
 
-			if (v[i].status > 0) {
+	 		float qxtemp = vN[i].x + rtemp*TMath::Sin(phitemp);
+	 		float qytemp = vN[i].y + rtemp*TMath::Cos(phitemp);
 
-	 			v[i].x = v[i].x - cmx;
-	 			v[i].y = v[i].y - cmy;
+	 		float sr = TMath::Sqrt(pow(qxtemp,2) + pow(qytemp,2));
+	 		float sphi = TMath::ATan2(qytemp, qxtemp);
 
-	 			float rtemp = fradial->GetRandom();
-	 			float phitemp = fphi->GetRandom();
+	 		Nq2x = Nq2x + pow(sr,2)*TMath::Cos(2*sphi);
+	 		Nq2y = Nq2y + pow(sr,2)*TMath::Sin(2*sphi);
+	 		// psi3 components with smear.
+	 		Nq3x = Nq3x + pow(sr,2)*TMath::Cos(3*sphi);
+	 		Nq3y = Nq3y + pow(sr,2)*TMath::Sin(3*sphi);
+	 		Nrsquare = Nrsquare + pow(sr,2);
 
-	 			float qxtemp = v[i].x + rtemp*TMath::Sin(phitemp);
-	 			float qytemp = v[i].y + rtemp*TMath::Cos(phitemp);
-
-	 			float sr = TMath::Sqrt(pow(qxtemp,2) + pow(qytemp,2));
-	 			float sphi = TMath::ATan2(qytemp, qxtemp);
-
-	 			q2x = q2x + pow(sr,2)*TMath::Cos(2*sphi);
-	 			q2y = q2y + pow(sr,2)*TMath::Sin(2*sphi);
-	 			// psi3 components with smear.
-	 			q3x = q3x + pow(sr,2)*TMath::Cos(3*sphi);
-	 			q3y = q3y + pow(sr,2)*TMath::Sin(3*sphi);
-	 			rsquare = rsquare + pow(sr,2);
-
-	 			nucleoncounter++;
-	 		}
-		}
-
-		q2x = q2x/(float)nucleoncounter;
-		q2y = q2y/(float)nucleoncounter;
-		q3x = q3x/(float)nucleoncounter;
-		q3y = q3y/(float)nucleoncounter;
-		rsquare = rsquare/(float)nucleoncounter;
-
-		psi2nucleon = (TMath::ATan2(q2y, q2x)/2.0) + (TMath::Pi()/2.0);
-		psi3nucleon = (TMath::ATan2(q3y, q3x)/3.0) + (TMath::Pi()/3.0);
-
-		epsilon2 = (TMath::Sqrt(pow(q2x,2) + pow(q2y,2)))/rsquare;
-		epsilon3 = (TMath::Sqrt(pow(q3x,2) + pow(q3y,2)))/rsquare;
-
-		psi2valuesnucleon.push_back(psi2nucleon);
-		psi3valuesnucleon.push_back(psi3nucleon);
-		epsilon2valuesnucleon.push_back(epsilon2);
-		epsilon3valuesnucleon.push_back(epsilon3);
+	 		nucleoncounter++;
+	 	}
 	}
+
+	Nq2x = Nq2x/(float)nucleoncounter;
+	Nq2y = Nq2y/(float)nucleoncounter;
+	Nq3x = Nq3x/(float)nucleoncounter;
+	Nq3y = Nq3y/(float)nucleoncounter;
+	Nrsquare = Nrsquare/(float)nucleoncounter;
+
+	psi2nucleon = (TMath::ATan2(Nq2y, Nq2x)/2.0) + (TMath::Pi()/2.0);
+	psi3nucleon = (TMath::ATan2(Nq3y, Nq3x)/3.0) + (TMath::Pi()/3.0);
+
+	Nepsilon2 = (TMath::Sqrt(pow(Nq2x,2) + pow(Nq2y,2)))/Nrsquare;
+	Nepsilon3 = (TMath::Sqrt(pow(Nq3x,2) + pow(Nq3y,2)))/Nrsquare;
+
+	psi2valuesnucleon.push_back(psi2nucleon);
+	psi3valuesnucleon.push_back(psi3nucleon);
+	epsilon2valuesnucleon.push_back(Nepsilon2);
+	epsilon3valuesnucleon.push_back(Nepsilon3);
 
 }
 
@@ -454,16 +463,12 @@ void parsePartons() {
 				partinitial.eta = cut.Eta();
 				partinitial.pT = cut.Pt();
 
-				/*if (cut.Pt() < 0.0001) {
-					cout << "parsePartons: " << cut.Pt() << endl;
-				}*/
-
 				if (fabs(partinitial.eta) < 3 && partinitial.t < 3) {
 					initialpartons.push_back(partinitial);
 				}
 			}
 
-			calculateParticipantPlane();
+			calculateParticipantPlanePartons();
 
 			initialpartons.clear();
 		}
@@ -531,7 +536,7 @@ void parseNucleons() {
 				}
 			}
 
-			calculateParticipantPlane();
+			calculateParticipantPlaneNucleons();
 
 			initialnucleon.clear();
 		}
@@ -726,17 +731,11 @@ void masterEllipticFlowCalc(int flagpsi) {
 
 	cout << "Running masterEllipticFlowCalc()..." << endl;
 
-	if (setFlag == 0) {
+	// Call to File 1.
+	parsePartons();
 
-		// Call to File 1.
-		parsePartons();
-	}
-
-	else if (setFlag == 1) {
-
-		// Call to File 2.
-		parseNucleons();
-	}
+	// Call to File 2.
+	parseNucleons();
 
 	// Creation of the TCanvas and TProfile.
 	TCanvas *c = new TCanvas("c","v2 calculations",700,700);
@@ -752,6 +751,11 @@ void masterEllipticFlowCalc(int flagpsi) {
 	TProfile *v3plotPhadrons = new TProfile("v3plotPhadrons","v_{3} vs. p_{T}",20,0,2.5,-1,1);
 	TProfile *v3plotNpartons = new TProfile("v3plotNpartons","v_{3} vs p_{T}",20,0,2.5,-1,1);
 	TProfile *v3plotNhadrons = new TProfile("v3plotNhadrons","v_{3} vs. p_{T}",20,0,2.5,-1,1);
+
+	TCanvas *c2 = new TCanvas("c2","Plot of nucleon plane",700,700);
+	gStyle->SetOptStat(0);
+	TH1F* hist1 = new TH1F("hist1",";#delta#psi_{2};Counts",200,-4,4);
+		hist1->Sumw2();
 
 	// Call to file 3.
 	parseFinalPartons(v2plotPpartons,v2plotNpartons,v2plotPpartons,v3plotNpartons);
@@ -804,7 +808,6 @@ void masterEllipticFlowCalc(int flagpsi) {
 		v3plotNpartons->Write();
 		v3plotNhadrons->Write();
 	}
-	f->Close();
 
 	if (setFlag == 0) {
 		for (unsigned int i = 0; i < psi2valuespartons.size(); i++) {
@@ -816,6 +819,17 @@ void masterEllipticFlowCalc(int flagpsi) {
 			cout << "Psi 2 for nucleons is: " << psi2valuesnucleon[i] << endl;
 		}
 	}
+
+	for (unsigned int j = 0; j < psi2valuesnucleon.size(); j++) {
+			float difference = psi2valuesnucleon[j] - psi2valuespartons[j];
+			hist1->Fill(difference);
+	}
+
+	c2->cd();
+	hist1->Draw();
+	hist1->Write();
+
+	f->Close();
 
 	cout << "Finished running analysis code..." << endl;
 	return;
