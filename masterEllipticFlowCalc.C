@@ -12,6 +12,7 @@
 // Flagpsi = 1, uses nucleons and tform = const.
 //
 // 07-16-2018
+// Updated 07-18-18
 //--------------------------------------------------------------------------------------------
 
 #include "TLatex.h"
@@ -167,6 +168,7 @@ float TotalE3nucleon;
 void calculateParticipantPlane() {
 
 	int nucleoncounter = 0;
+	int cmcounter = 0;
 	float cmx = 0;
 	float cmy = 0;
 	float q2x = 0;
@@ -235,14 +237,16 @@ void calculateParticipantPlane() {
 		vector<nucleon> v = initialnucleon;
 
 		for (unsigned int k = 0; k < v.size(); k++) {
-			cmx = cmx + v[k].x;
-			cmy = cmy + v[k].y;
+			if (v[k].status > 0) {
+				cmx = cmx + v[k].x;
+				cmy = cmy + v[k].y;
+
+				cmcounter++;
+			}
 		}
 
-		int counter = v.size();
-
-		cmx = cmx/(float)counter;
-		cmy = cmy/(float)counter;
+		cmx = cmx/(float)cmcounter;
+		cmy = cmy/(float)cmcounter;
 
 		for (unsigned int i = 0; i < v.size(); i++) {
 
@@ -450,9 +454,9 @@ void parsePartons() {
 				partinitial.eta = cut.Eta();
 				partinitial.pT = cut.Pt();
 
-				if (cut.Pt() < 0.0001) {
+				/*if (cut.Pt() < 0.0001) {
 					cout << "parsePartons: " << cut.Pt() << endl;
-				}
+				}*/
 
 				if (fabs(partinitial.eta) < 3 && partinitial.t < 3) {
 					initialpartons.push_back(partinitial);
@@ -801,6 +805,17 @@ void masterEllipticFlowCalc(int flagpsi) {
 		v3plotNhadrons->Write();
 	}
 	f->Close();
+
+	if (setFlag == 0) {
+		for (unsigned int i = 0; i < psi2valuespartons.size(); i++) {
+			cout << "Psi 2 for partons is: " << psi2valuespartons[i] << endl;
+		}
+	}
+	else if (setFlag == 1) {
+		for (unsigned int i = 0; i < psi2valuesnucleon.size(); i++) {
+			cout << "Psi 2 for nucleons is: " << psi2valuesnucleon[i] << endl;
+		}
+	}
 
 	cout << "Finished running analysis code..." << endl;
 	return;
