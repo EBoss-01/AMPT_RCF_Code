@@ -12,7 +12,7 @@
 // Flagpsi = 1, uses nucleons and tform = const.
 //
 // 07-16-2018
-// Updated 07-18-18 (Now calculates psi2 using both methods at all times.)
+// Updated 07-18-18
 //--------------------------------------------------------------------------------------------
 
 #include "TLatex.h"
@@ -312,45 +312,34 @@ void calculateFlowPartons(TProfile *v2plotPpartons, TProfile *v2plotNpartons, TP
 	float v3Npartons = 0;
 	int increment = 0;
 
-	if (setFlag == 0) {
-		for (unsigned int j = 0; j < finalstate.size(); j++) {
+	// Also don't use the flags in this section to ensure both calculations happen.
 
-			if (finalstate[j].pT < 0.0001) {
-				continue;
-			}
+	for (unsigned int j = 0; j < finalstate.size(); j++) {
 
-			if (fabs(finalstate[j].eta) < 2) {
-
-				increment = finalstate[j].evtN;
-
-				v2Ppartons = TMath::Cos(2*(finalstate[j].phi - psi2valuespartons[increment-1]));
-				v2plotPpartons->Fill(finalstate[j].pT,v2Ppartons);
-
-				v3Ppartons = TMath::Cos(3*(finalstate[j].phi - psi3valuespartons[increment-1]));
-				v3plotPpartons->Fill(finalstate[j].pT,v3Ppartons);
-			}
-
+		if (finalstate[j].pT < 0.0001) {
+			continue;
 		}
-	}
-	else if (setFlag == 1) {
-		for (unsigned int j = 0; j < finalstate.size(); j++) {
 
-			if (finalstate[j].pT < 0.0001) {
-				continue;
-			}
+		if (fabs(finalstate[j].eta) < 2) {
 
-			if (fabs(finalstate[j].eta) < 2) {
+			increment = finalstate[j].evtN;
+			// psi using partons
+			v2Ppartons = TMath::Cos(2*(finalstate[j].phi - psi2valuespartons[increment-1]));
+			v2plotPpartons->Fill(finalstate[j].pT,v2Ppartons);
 
-				increment = finalstate[j].evtN;
+			v3Ppartons = TMath::Cos(3*(finalstate[j].phi - psi3valuespartons[increment-1]));
+			v3plotPpartons->Fill(finalstate[j].pT,v3Ppartons);
 
-				v2Npartons = TMath::Cos(2*(finalstate[j].phi - psi2valuesnucleon[increment-1]));
-				v2plotNpartons->Fill(finalstate[j].pT,v2Npartons);
+			// psi using nucleons
+			v2Npartons = TMath::Cos(2*(finalstate[j].phi - psi2valuesnucleon[increment-1]));
+			v2plotNpartons->Fill(finalstate[j].pT,v2Npartons);
 
-				v3Npartons = TMath::Cos(3*(finalstate[j].phi - psi3valuesnucleon[increment-1]));
-				v3plotNpartons->Fill(finalstate[j].pT,v3Npartons);
-			}
+			v3Npartons = TMath::Cos(3*(finalstate[j].phi - psi3valuesnucleon[increment-1]));
+			v3plotNpartons->Fill(finalstate[j].pT,v3Npartons);
 		}
+
 	}
+
 }
 
 void calculateFlowHadrons(TProfile *v2plotPhadrons, TProfile *v2plotNhadrons, TProfile *v3plotPhadrons, TProfile *v3plotNhadrons) {
@@ -360,42 +349,38 @@ void calculateFlowHadrons(TProfile *v2plotPhadrons, TProfile *v2plotNhadrons, TP
 	float v3Phadrons = 0;
 	float v3Nhadrons = 0;
 
-	if (setFlag == 0) {
+	// Partons
+	for (unsigned int i = 0; i < psi2valuespartons.size(); i++) {
 
-		for (unsigned int i = 0; i < psi2valuespartons.size(); i++) {
+		for (unsigned int j = 0; j < finalhadrons.size(); j++) {
 
-			for (unsigned int j = 0; j < finalhadrons.size(); j++) {
+			if (finalhadrons[j].evtN == (i+1)) {
 
-				if (finalhadrons[j].evtN == (i+1)) {
+				if (fabs(finalhadrons[j].eta) < 0.35) {
 
-					if (fabs(finalhadrons[j].eta) < 0.35) {
+					v2Phadrons = TMath::Cos(2*(finalhadrons[j].phi - psi2valuespartons[i]));
+					v2plotPhadrons->Fill(finalhadrons[j].pT,v2Phadrons);
 
-						v2Phadrons = TMath::Cos(2*(finalhadrons[j].phi - psi2valuespartons[i]));
-						v2plotPhadrons->Fill(finalhadrons[j].pT,v2Phadrons);
-
-						v3Phadrons = TMath::Cos(3*(finalhadrons[j].phi - psi3valuespartons[i]));
-						v3plotPhadrons->Fill(finalhadrons[j].pT,v3Phadrons);
-					}
+					v3Phadrons = TMath::Cos(3*(finalhadrons[j].phi - psi3valuespartons[i]));
+					v3plotPhadrons->Fill(finalhadrons[j].pT,v3Phadrons);
 				}
 			}
 		}
 	}
-	else if (setFlag == 1) {
+	// nucleons
+	for (unsigned int i = 0; i < psi2valuesnucleon.size(); i++) {
 
-		for (unsigned int i = 0; i < psi2valuesnucleon.size(); i++) {
+		for (unsigned int j = 0; j < finalhadrons.size(); j++) {
 
-			for (unsigned int j = 0; j < finalhadrons.size(); j++) {
+			if (finalhadrons[j].evtN == (i+1)) {
 
-				if (finalhadrons[j].evtN == (i+1)) {
+				if (fabs(finalhadrons[j].eta) < 0.35) {
 
-					if (fabs(finalhadrons[j].eta) < 0.35) {
+					v2Nhadrons = TMath::Cos(2*(finalhadrons[j].phi - psi2valuesnucleon[i]));
+					v2plotNhadrons->Fill(finalhadrons[j].pT,v2Nhadrons);
 
-						v2Nhadrons = TMath::Cos(2*(finalhadrons[j].phi - psi2valuesnucleon[i]));
-						v2plotNhadrons->Fill(finalhadrons[j].pT,v2Nhadrons);
-
-						v3Nhadrons = TMath::Cos(3*(finalhadrons[j].phi - psi3valuesnucleon[i]));
-						v3plotNhadrons->Fill(finalhadrons[j].pT,v3Nhadrons);
-					}
+					v3Nhadrons = TMath::Cos(3*(finalhadrons[j].phi - psi3valuesnucleon[i]));
+					v3plotNhadrons->Fill(finalhadrons[j].pT,v3Nhadrons);
 				}
 			}
 		}
@@ -725,7 +710,7 @@ void parseFinalHadrons(TProfile *v2plotPhadrons, TProfile *v2plotNhadrons, TProf
 //-------------------------------------
 // Main Code
 //-------------------------------------
-void masterEllipticFlowCalc(int flagpsi) {
+void masterEllipticFlowCalc(int flagpsi = 0) {
 
 	setFlag = flagpsi;
 
@@ -796,18 +781,16 @@ void masterEllipticFlowCalc(int flagpsi) {
 	v3plotNhadrons->SetLineColor(kBlack);
 	v3plotNhadrons->Draw();
 	TFile *f = new TFile("out_masterEllipticFlowCalc.root","RECREATE");
-	if (setFlag == 0) {
-		v2plotPpartons->Write();
-		v2plotPhadrons->Write();
-		v3plotPpartons->Write();
-		v3plotPhadrons->Write();
-	}
-	else if (setFlag == 1) {
-		v2plotNpartons->Write();
-		v2plotNhadrons->Write();
-		v3plotNpartons->Write();
-		v3plotNhadrons->Write();
-	}
+	//partons
+	v2plotPpartons->Write();
+	v2plotPhadrons->Write();
+	v3plotPpartons->Write();
+	v3plotPhadrons->Write();
+	//nucleons
+	v2plotNpartons->Write();
+	v2plotNhadrons->Write();
+	v3plotNpartons->Write();
+	v3plotNhadrons->Write();
 
 	if (setFlag == 0) {
 		for (unsigned int i = 0; i < psi2valuespartons.size(); i++) {
