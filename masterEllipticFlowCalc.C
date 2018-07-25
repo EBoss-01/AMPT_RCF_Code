@@ -12,7 +12,7 @@
 // Flagpsi = 1, uses nucleons and tform = const.
 //
 // 07-16-2018
-// Updated 07-18-18
+// Updated 07-25-18
 //--------------------------------------------------------------------------------------------
 
 #include "TLatex.h"
@@ -672,34 +672,37 @@ void parseFinalHadrons(TProfile *v2plotPhadrons, TProfile *v2plotNhadrons, TProf
 					continue;
 				}
 
-				if ((fabs(particleid) == 211) || (fabs(particleid) == 2212) || (fabs(particleid) == 321)) {
+				if ((fabs(particleid) != 211) && (fabs(particleid) != 2212) && (fabs(particleid) != 321)) continue;
 					
-					hadrons finalH;
-					finalH.evtN = evtnumber;
-					finalH.PID = particleid;
-					finalH.px = momentum[0];
-					finalH.py = momentum[1];
-					finalH.pz = momentum[2];
-					finalH.m = Hmass;
-					finalH.x = spaces[0];
-					finalH.y = spaces[1];
-					finalH.z = spaces[2];
-					finalH.t = spaces[3];
+				hadrons finalH;
+				finalH.evtN = evtnumber;
+				finalH.PID = particleid;
+				finalH.px = momentum[0];
+				finalH.py = momentum[1];
+				finalH.pz = momentum[2];
+				finalH.m = Hmass;
+				finalH.x = spaces[0];
+				finalH.y = spaces[1];
+				finalH.z = spaces[2];
+				finalH.t = spaces[3];
 
-					float energy3 = TMath::Sqrt(pow(momentum[0],2) + pow(momentum[1],2) + pow(momentum[2],2) + pow(Hmass,2));
-					TLorentzVector hv(momentum[0], momentum[1], momentum[2], energy3);
+				float energy3 = TMath::Sqrt(pow(momentum[0],2) + pow(momentum[1],2) + pow(momentum[2],2) + pow(Hmass,2));
+				TLorentzVector hv(momentum[0], momentum[1], momentum[2], energy3);
 
-					finalH.eta = hv.Eta();
-					finalH.phi = hv.Phi();
-					finalH.pT = hv.Pt();
+				finalH.eta = hv.Eta();
+				finalH.phi = hv.Phi();
+				finalH.pT = hv.Pt();
 
-					finalhadrons.push_back(finalH);
-				}
+				finalhadrons.push_back(finalH);
 			}
+
+			calculateFlowHadrons(v2plotPhadrons,v2plotNhadrons,v3plotPhadrons,v3plotNhadrons);
+
+			finalhadrons.clear();
 		}
 	}
 
-	calculateFlowHadrons(v2plotPhadrons,v2plotNhadrons,v3plotPhadrons,v3plotNhadrons);
+	//calculateFlowHadrons(v2plotPhadrons,v2plotNhadrons,v3plotPhadrons,v3plotNhadrons);
 
 	cout << "Closing ampt.dat." << endl;
 
