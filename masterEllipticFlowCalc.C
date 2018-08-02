@@ -564,7 +564,7 @@ void parsePartons(PartonMap &keymomentums) {
 				parton partinitial;
 				partinitial.evtN = eventnumber;
 				partinitial.PID = pid;
-				partinitial.position = linecounter
+				partinitial.position = linecounter;
 				partinitial.px = momentas[0];
 				partinitial.py = momentas[1];
 				partinitial.pz = momentas[2];
@@ -869,7 +869,7 @@ void parseFinalPartons(TProfile *v2plotPpartons,TProfile *v2plotNpartons,TProfil
 
 			if (counterparton == participantparton) {
 
-				calculateFlowPartons(v2plotPpartons,v2plotNpartons,v3plotPpartons,v3plotNpartons);
+				calculateFlowPartons(v2plotPpartons,v2plotNpartons,v3plotPpartons,v3plotNpartons,v2plotPpartonseta1,v2plotPpartonsetap5,v2plotNpartonseta1,v2plotNpartonsetap5);
 
 				finalstate.clear();
 				counterparton = 0;
