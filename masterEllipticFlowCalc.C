@@ -6,13 +6,14 @@
 // File 2: npart-xy.dat (uses nucleons for Psi for set tform = const)
 // File 3: parton-after-coalescence.dat (uses partons for v2 calculation)
 // File 4: ampt.dat (uses hadrons for v2 calculation)
+// File 5: parton-collisionsHistory.dat (used to trace partons to formation time)
 //
 // Flagpsi is used to determine the files used for the plane calculation.
 // Flagpsi = 0, uses partons and tform != const.
 // Flagpsi = 1, uses nucleons and tform = const.
 //
 // 07-16-2018
-// Updated 07-25-18
+// Updated 08-02-18 (added new cuts and ability to plot formation time distributions)
 //--------------------------------------------------------------------------------------------
 
 #include "TLatex.h"
@@ -45,6 +46,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <map>
 
 using namespace std;
 
@@ -58,6 +60,8 @@ struct parton {
 	int evtN;
 // Parton ID
 	int PID;
+// Parton Line Position
+	int position;
 // Momenta at birth
 	float px;
 	float py;
@@ -127,6 +131,49 @@ struct hadrons {
 	float pT;
 };
 
+// For parseCollisions
+struct collision {
+// Event number
+	int evtN;
+// Parton ID
+	int PID;
+// Parton number
+	int nline;
+// Momenta
+	float px;
+	float py;
+	float pz;
+// Mass
+	float m;
+// Spacetime
+	float x;
+	float y;
+	float z;
+	float t;
+};
+
+// For findFormationTime
+struct newparton {
+// Event number
+	int evtN;
+// Parton ID
+	int PID;
+// New Parton Number
+	int Nparton;
+// Momenta
+	float px;
+	float py;
+	float pz;
+// Mass
+	float m;
+// Additional
+	float eta;
+	float phi;
+	float pT;
+// Formation Time
+	float t;
+};
+
 //-------------------------------------
 // Variables
 //-------------------------------------
@@ -136,6 +183,12 @@ int eventnumber = 0;
 // Vectors
 vector<parton> initialpartons;
 vector<nucleon> initialnucleon;
+// New vectors for extracting formation times.
+vector<collision> partoncollisions;
+vector<newparton> partonWTform;
+vector<int> partoncounts;
+vector<parton> allinitialpartons;
+
 vector<float> psi2valuespartons;
 vector<float> psi2valuesnucleon;
 vector<float> epsilon2valuespartons;
@@ -160,6 +213,13 @@ float TotalE2partons;
 float TotalE2nucleon;
 float TotalE3partons;
 float TotalE3nucleon;
+// Variables needed for multimap
+int Pevent = 0;
+float Ppx = 0;
+float Ppy = 0;
+float Ppz = 0;
+string pkey;
+typedef multimap<string, int> PartonMap;
 
 //-------------------------------------
 // Functions
@@ -304,7 +364,41 @@ void calculateParticipantPlaneNucleons() {
 
 }
 
-void calculateFlowPartons(TProfile *v2plotPpartons, TProfile *v2plotNpartons, TProfile *v3plotPpartons, TProfile *v3plotNpartons) {
+void findFormationTime(PartonMap &keymomentums, string &pkey, TLorentzVector ev) {
+
+	newparton Update;
+
+	TLorentzVector v = ev;
+
+	PartonMap::iterator it = keymomentums.find(pkey);
+
+	int initialpartonvalue = keymomentums.find(pkey)->second;
+
+	for (unsigned int i = 0; i < allinitialpartons.size(); i++) {
+
+		if (allinitialpartons[i].evtN == Pevent) {
+
+			if (allinitialpartons[i].position == initialpartonvalue) {
+
+				Update.evtN = allinitialpartons[i].evtN;
+				Update.PID = allinitialpartons[i].PID;
+				Update.Nparton = allinitialpartons[i].position;
+				Update.px = Ppx;
+				Update.py = Ppy;
+				Update.pz = Ppz;
+				Update.m = allinitialpartons[i].m;
+				Update.eta = v.Eta();
+				Update.phi = v.Phi();
+				Update.pT = v.Pt();
+				Update.t = allinitialpartons[i].t;
+
+				partonWTform.push_back(Update);
+			}
+		}
+	}
+}
+
+void calculateFlowPartons(TProfile *v2plotPpartons, TProfile *v2plotNpartons, TProfile *v3plotPpartons, TProfile *v3plotNpartons, TProfile *v2plotPpartonseta1, TProfile *v2plotPpartonsetap5, TProfile *v2plotNpartonseta1, TProfile *v2plotNpartonsetap5) {
 
 	float v2Ppartons = 0;
 	float v2Npartons = 0;
@@ -336,6 +430,34 @@ void calculateFlowPartons(TProfile *v2plotPpartons, TProfile *v2plotNpartons, TP
 
 			v3Npartons = TMath::Cos(3*(finalstate[j].phi - psi3valuesnucleon[increment-1]));
 			v3plotNpartons->Fill(finalstate[j].pT,v3Npartons);
+		}
+
+		if (fabs(finalstate[j].eta) < 1) {
+
+			increment = finalstate[j].evtN;
+
+			// psi using partons
+			v2Ppartons = TMath::Cos(2*(finalstate[j].phi - psi2valuespartons[increment-1]));
+			v2plotPpartonseta1->Fill(finalstate[j].pT,v2Ppartons);
+
+			// psi using nucleons
+			v2Npartons = TMath::Cos(2*(finalstate[j].phi - psi2valuesnucleon[increment-1]));
+			v2plotNpartonseta1->Fill(finalstate[j].pT,v2Npartons);
+
+		}
+
+		if (fabs(finalstate[j].eta) < 0.5) {
+
+			increment = finalstate[j].evtN;
+
+			// psi using partons
+			v2Ppartons = TMath::Cos(2*(finalstate[j].phi - psi2valuespartons[increment-1]));
+			v2plotPpartonsetap5->Fill(finalstate[j].pT,v2Ppartons);
+
+			// psi using nucleons
+			v2Npartons = TMath::Cos(2*(finalstate[j].phi - psi2valuesnucleon[increment-1]));
+			v2plotNpartonsetap5->Fill(finalstate[j].pT,v2Npartons);
+
 		}
 
 	}
@@ -387,7 +509,7 @@ void calculateFlowHadrons(TProfile *v2plotPhadrons, TProfile *v2plotNhadrons, TP
 	}
 }
 
-void parsePartons() {
+void parsePartons(PartonMap &keymomentums) {
 
 	// Needed to read header
 	string line;
@@ -426,10 +548,15 @@ void parsePartons() {
 				continue;
 			}
 
+			// This counter is used to determine actual parton number.
+			int linecounter = 0;
+
 			// This loop files the initial information
 			for (int i = 0; i < partonsN; i++) {
 
 				myFileOne >> pid >> momentas[0] >> momentas[1] >> momentas[2] >> pmass >> spacetime[0] >> spacetime[1] >> spacetime[2] >> spacetime[3];
+
+				linecounter++;
 
 				float energy1 = TMath::Sqrt(pow(momentas[0],2) + pow(momentas[1],2) + pow(momentas[2],2) + pow(pmass,2));
 				TLorentzVector cut(momentas[0], momentas[1], momentas[2], energy1);
@@ -437,6 +564,7 @@ void parsePartons() {
 				parton partinitial;
 				partinitial.evtN = eventnumber;
 				partinitial.PID = pid;
+				partinitial.position = linecounter
 				partinitial.px = momentas[0];
 				partinitial.py = momentas[1];
 				partinitial.pz = momentas[2];
@@ -447,6 +575,17 @@ void parsePartons() {
 				partinitial.t = spacetime[3];
 				partinitial.eta = cut.Eta();
 				partinitial.pT = cut.Pt();
+
+				// Setting the multimap variables.
+				Pevent = eventnumber;
+				Ppx = momentas[0];
+				Ppy = momentas[1];
+				Ppz = momentas[2];
+
+				pkey = Form("%d*%g*%g*%g", Pevent, Ppx, Ppy, Ppz);
+				keymomentums.insert(make_pair(pkey, linecounter));
+
+				allinitialpartons.push_back(partinitial);
 
 				if (fabs(partinitial.eta) < 3 && partinitial.t < 3) {
 					initialpartons.push_back(partinitial);
@@ -460,6 +599,113 @@ void parsePartons() {
 	}
 
 	myFileOne.close();
+}
+
+void parseCollisions (PartonMap &keymomentums) {
+	string line4;
+	int Pevt;
+	int extrajunk1;
+	int partonindex1;
+	int partonindex2;
+	// Initial parton information
+	int parton1_id_initial;
+	float parton1_momenta_initial[3];
+	float parton1_mass_initial;
+	double parton1_spacetime_initial[4];
+	int parton2_id_initial;
+	float parton2_momenta_initial[3];
+	float parton2_mass_initial;
+	double parton2_spacetime_initial[4];
+	// Final parton information
+	int parton1_final_id;
+	float parton1_final_momenta[3];
+	float parton1_final_mass;
+	double parton1_final_spacetime[4];
+	int parton2_final_id;
+	float parton2_final_momenta[3];
+	float parton2_final_mass;
+	double parton2_final_spacetime[4];
+
+	ifstream myFileFive;
+
+	myFileFive.open("ana/parton-collisionsHistory.dat");
+	if (!myFileFive) {
+		cout << "Unable to open parton-collisionsHistory." << endl;
+		return;
+	}
+	else {
+		cout << "Successfully opened parton-collisionsHistory." << endl;
+	}
+
+	while (std::getline(myFileFive, line4)) {
+
+		if (!myFileFive) break;
+
+		stringstream headline(line4);
+		string description;
+
+		if (headline >> description >> Pevt >> extrajunk1 >> partonindex1 >> partonindex2) {
+
+			myFileFive >> parton1_id_initial >> parton1_momenta_initial[0] >> parton1_momenta_initial[1] >> parton1_momenta_initial[2] >> parton1_mass_initial >> parton1_spacetime_initial[0] >> parton1_spacetime_initial[1] >> parton1_spacetime_initial[2] >> parton1_spacetime_initial[3];
+
+			myFileFive >> parton2_id_initial >> parton2_momenta_initial[0] >> parton2_momenta_initial[1] >> parton2_momenta_initial[2] >> parton2_mass_initial >> parton2_spacetime_initial[0] >> parton2_spacetime_initial[1] >> parton2_spacetime_initial[2] >> parton2_spacetime_initial[3];
+
+			myFileFive >> parton1_final_id >> parton1_final_momenta[0] >> parton1_final_momenta[1] >> parton1_final_momenta[2] >> parton1_final_mass >> parton1_final_spacetime[0] >> parton1_final_spacetime[1] >> parton1_final_spacetime[2] >> parton1_final_spacetime[3];
+
+			myFileFive >> parton2_final_id >> parton2_final_momenta[0] >> parton2_final_momenta[1] >> parton2_final_momenta[2] >> parton2_final_mass >> parton2_final_spacetime[0] >> parton2_final_spacetime[1] >> parton2_final_spacetime[2] >> parton2_final_spacetime[3];
+
+			collision part1;
+			part1.evtN = Pevt;
+			part1.PID = parton1_final_id;
+			part1.nline = partonindex1;
+			part1.px = parton1_final_momenta[0];
+			part1.py = parton1_final_momenta[1];
+			part1.pz = parton1_final_momenta[2];
+			part1.m = parton1_final_mass;
+			part1.x = parton1_final_spacetime[0];
+			part1.y = parton1_final_spacetime[1];
+			part1.z = parton1_final_spacetime[2];
+			part1.t = parton1_final_spacetime[3];
+
+			// Setting the multimap variables again.
+			Pevent = Pevt;
+			Ppx = parton1_final_momenta[0];
+			Ppy = parton1_final_momenta[1];
+			Ppz = parton1_final_momenta[2];
+
+			pkey = Form("%d*%g*%g*%g", Pevent, Ppx, Ppy, Ppz);
+			keymomentums.insert(make_pair(pkey, partonindex1));
+
+			collision part2;
+			part2.evtN = Pevt;
+			part2.PID = parton2_final_id;
+			part2.nline = partonindex2;
+			part2.px = parton2_final_momenta[0];
+			part2.py = parton2_final_momenta[1];
+			part2.pz = parton2_final_momenta[2];
+			part2.m = parton2_final_mass;
+			part2.x = parton2_final_spacetime[0];
+			part2.y = parton2_final_spacetime[1];
+			part2.z = parton2_final_spacetime[2];
+			part2.t = parton2_final_spacetime[3];
+
+			// Setting the multimap variables once more.
+			Pevent = Pevt;
+			Ppx = parton2_final_momenta[0];
+			Ppy = parton2_final_momenta[1];
+			Ppz = parton2_final_momenta[2];
+
+			pkey = Form("%d*%g*%g*%g", Pevent, Ppx, Ppy, Ppz);
+			keymomentums.insert(make_pair(pkey, partonindex2));
+
+			partoncollisions.push_back(part1);
+			partoncollisions.push_back(part2);
+		}
+	}
+
+	cout << "Closing parton-collisionsHistory." << endl;
+
+	myFileFive.close();
 }
 
 void parseNucleons() {
@@ -531,7 +777,7 @@ void parseNucleons() {
 
 }
 
-void parseFinalPartons(TProfile *v2plotPpartons,TProfile *v2plotNpartons,TProfile *v3plotPpartons,TProfile *v3plotNpartons) {
+void parseFinalPartons(TProfile *v2plotPpartons,TProfile *v2plotNpartons,TProfile *v3plotPpartons,TProfile *v3plotNpartons, TProfile *v2plotPpartonseta1, TProfile *v2plotPpartonsetap5, TProfile *v2plotNpartonseta1, TProfile *v2plotNpartonsetap5, PartonMap &keymomentums) {
 
 	string line2;
 	int evt;
@@ -610,6 +856,16 @@ void parseFinalPartons(TProfile *v2plotPpartons,TProfile *v2plotNpartons,TProfil
 
 			finalstate.push_back(finalpartons);
 			counterparton++;
+
+			// Adjusting multimap variables.
+			Pevent = eventcounter;
+			Ppx = token[1];
+			Ppy = token[2];
+			Ppz = token[3];
+
+			pkey = Form("%d*%g*%g*%g", Pevent, Ppx, Ppy, Ppz);
+			// Call to new function
+			findFormationTime(keymomentums, pkey, ev);
 
 			if (counterparton == participantparton) {
 
@@ -717,10 +973,16 @@ void masterEllipticFlowCalc(int flagpsi = 0) {
 
 	setFlag = flagpsi;
 
+	// Empty container for use with multimap.
+	PartonMap keymomentums;
+
 	cout << "Running masterEllipticFlowCalc()..." << endl;
 
 	// Call to File 1.
-	parsePartons();
+	parsePartons(keymomentums);
+
+	// Call to File 5.
+	parseCollisions(keymomentums);
 
 	// Call to File 2.
 	parseNucleons();
@@ -733,6 +995,12 @@ void masterEllipticFlowCalc(int flagpsi = 0) {
 	TProfile *v2plotNpartons = new TProfile("v2plotNpartons","v_{2} vs p_{T}",20,0,2.5,-1,1);
 	TProfile *v2plotNhadrons = new TProfile("v2plotNhadrons","v_{2} vs. p_{T}",20,0,2.5,-1,1);
 
+	TProfile *v2plotPpartonseta1 = new TProfile("v2plotPpartonseta1","v_{2} vs p_{T}",20,0,2.5,-1,1);
+	TProfile *v2plotNpartonseta1 = new TProfile("v2plotNpartonseta1","v_{2} vs p_{T}",20,0,2.5,-1,1);
+
+	TProfile *v2plotPpartonsetap5 = new TProfile("v2plotPpartonsetap5","v_{2} vs p_{T}",20,0,2.5,-1,1);
+	TProfile *v2plotNpartonsetap5 = new TProfile("v2plotNpartonsetap5","v_{2} vs p_{T}",20,0,2.5,-1,1);
+
 	TCanvas *c1 = new TCanvas("c1","v3 calculations",700,700);
 	gStyle->SetOptStat(0);
 	TProfile *v3plotPpartons = new TProfile("v3plotPpartons","v_{3} vs p_{T}",20,0,2.5,-1,1);
@@ -744,9 +1012,33 @@ void masterEllipticFlowCalc(int flagpsi = 0) {
 	gStyle->SetOptStat(0);
 	TH1F* hist1 = new TH1F("hist1",";#delta#psi_{2};Counts",200,-4,4);
 		hist1->Sumw2();
+	TH1F* formationdist1 = new TH1F("formationdist1",";t_{form};Counts",400,0,4);
+		formationdist1->Sumw2();
+	TH1F* formationdist2 = new TH1F("formationdist2",";t_{form};Counts",400,0,4);
+		formationdist2->Sumw2();
+	TH1F* formationdist3 = new TH1F("formationdist3",";t_{form};Counts",400,0,4);
+		formationdist3->Sumw2();
+	TH1F* formationdist4 = new TH1F("formationdist4",";t_{form};Counts",400,0,4);
+		formationdist4->Sumw2();
 
 	// Call to file 3.
-	parseFinalPartons(v2plotPpartons,v2plotNpartons,v2plotPpartons,v3plotNpartons);
+	parseFinalPartons(v2plotPpartons,v2plotNpartons,v3plotPpartons,v3plotNpartons,v2plotPpartonseta1,v2plotPpartonsetap5,v2plotNpartonseta1,v2plotNpartonsetap5,keymomentums);
+
+	for (unsigned int i = 0; i < partonWTform.size(); i++) {
+
+		if ((partonWTform[i].pT > 0.2) && (partonWTform[i].pT <0.4)) {
+			formationdist1->Fill(partonWTform[i].t);
+		}
+		if ((partonWTform[i].pT > 0.4) && (partonWTform[i].pT < 0.6)) {
+			formationdist2->Fill(partonWTform[i].t);
+		}
+		if ((partonWTform[i].pT > 0.6) && (partonWTform[i].pT < 0.8)) {
+			formationdist3->Fill(partonWTform[i].t);
+		}
+		if ((partonWTform[i].pT > 0.8) && (partonWTform[i].pT < 1.0)) {
+			formationdist4->Fill(partonWTform[i].t);
+		}
+	}
 	// Call to File 4.
 	parseFinalHadrons(v2plotPhadrons,v2plotNhadrons,v3plotPhadrons,v3plotNhadrons);
 
@@ -766,6 +1058,22 @@ void masterEllipticFlowCalc(int flagpsi = 0) {
 	v2plotNhadrons->SetLineWidth(2);
 	v2plotNhadrons->SetLineColor(kBlack);
 	v2plotNhadrons->Draw();
+
+	v2plotPpartonseta1->SetLineWidth(2);
+	v2plotPpartonseta1->SetLineColor(kBlack);
+	v2plotPpartonseta1->Draw();
+
+	v2plotNpartonseta1->SetLineWidth(2);
+	v2plotNpartonseta1->SetLineColor(kBlack);
+	v2plotNpartonseta1->Draw();
+
+	v2plotPpartonsetap5->SetLineWidth(2);
+	v2plotPpartonsetap5->SetLineColor(kBlack);
+	v2plotPpartonsetap5->Draw();
+
+	v2plotNpartonsetap5->SetLineWidth(2);
+	v2plotNpartonsetap5->SetLineColor(kBlack);
+	v2plotNpartonsetap5->Draw();
 
 	c1->cd();
 	v3plotPpartons->SetLineWidth(2);
@@ -787,11 +1095,15 @@ void masterEllipticFlowCalc(int flagpsi = 0) {
 	//partons
 	v2plotPpartons->Write();
 	v2plotPhadrons->Write();
+	v2plotPpartonseta1->Write();
+	v2plotPpartonsetap5->Write();
 	v3plotPpartons->Write();
 	v3plotPhadrons->Write();
 	//nucleons
 	v2plotNpartons->Write();
 	v2plotNhadrons->Write();
+	v2plotNpartonseta1->Write();
+	v2plotNpartonsetap5->Write();
 	v3plotNpartons->Write();
 	v3plotNhadrons->Write();
 
@@ -813,7 +1125,16 @@ void masterEllipticFlowCalc(int flagpsi = 0) {
 
 	c2->cd();
 	hist1->Draw();
+	formationdist1->Draw();
+	formationdist2->Draw();
+	formationdist3->Draw();
+	formationdist4->Draw();
+
 	hist1->Write();
+	formationdist1->Write();
+	formationdist2->Write();
+	formationdist3->Write();
+	formationdist4->Write();
 
 	f->Close();
 
