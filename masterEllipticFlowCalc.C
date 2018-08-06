@@ -13,7 +13,7 @@
 // Flagpsi = 1, uses nucleons and tform = const.
 //
 // 07-16-2018
-// Updated 08-02-18 (added new cuts and ability to plot formation time distributions)
+// Updated 08-06-18 (added new cuts and ability to plot formation time distributions)
 //--------------------------------------------------------------------------------------------
 
 #include "TLatex.h"
@@ -1012,13 +1012,13 @@ void masterEllipticFlowCalc(int flagpsi = 0) {
 	gStyle->SetOptStat(0);
 	TH1F* hist1 = new TH1F("hist1",";#delta#psi_{2};Counts",200,-4,4);
 		hist1->Sumw2();
-	TH1F* formationdist1 = new TH1F("formationdist1",";t_{form};Counts",400,0,4);
+	TH1F* formationdist1 = new TH1F("formationdist1",";t_{form};Counts",4000,0,4);
 		formationdist1->Sumw2();
-	TH1F* formationdist2 = new TH1F("formationdist2",";t_{form};Counts",400,0,4);
+	TH1F* formationdist2 = new TH1F("formationdist2",";t_{form};Counts",4000,0,4);
 		formationdist2->Sumw2();
-	TH1F* formationdist3 = new TH1F("formationdist3",";t_{form};Counts",400,0,4);
+	TH1F* formationdist3 = new TH1F("formationdist3",";t_{form};Counts",4000,0,4);
 		formationdist3->Sumw2();
-	TH1F* formationdist4 = new TH1F("formationdist4",";t_{form};Counts",400,0,4);
+	TH1F* formationdist4 = new TH1F("formationdist4",";t_{form};Counts",4000,0,4);
 		formationdist4->Sumw2();
 
 	// Call to file 3.
