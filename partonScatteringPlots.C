@@ -86,6 +86,8 @@ float energy2 = 0;
 float energy3 = 0;
 
 // Plots
+TCanvas* c = new TCanvas("c","Scattering Plots",700,700);
+gStyle->SetOptStat(0);
 TH1F* scattering_pt1 = new TH1F("scattering_pt1",";n scatterings;Probability",14,0,14);
 TH1F* scattering_pt2 = new TH1F("scattering_pt2",";n scatterings;Probability",14,0,14);
 TH1F* scattering_pt3 = new TH1F("scattering_pt3",";n scatterings;Probability",14,0,14);
@@ -322,9 +324,7 @@ void partonScatteringPlots(void) {
 
 	}
 
-	TCanvas* c = new TCanvas("c","Scattering Plots",700,700);
-	gStyle->SetOptStat(0);
-
+	c->cd();
 	scattering_pt1->Scale(1.0/(scattering_pt1->Integral()));
 	scattering_pt1->Draw();
 	scattering_pt2->Scale(1.0/(scattering_pt2->Integral()));
