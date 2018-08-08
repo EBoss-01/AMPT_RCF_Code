@@ -85,12 +85,6 @@ float energy1 = 0;
 float energy2 = 0;
 float energy3 = 0;
 
-// Plots
-TH1F* scattering_pt1 = new TH1F("scattering_pt1",";n scatterings;Probability",14,0,14);
-TH1F* scattering_pt2 = new TH1F("scattering_pt2",";n scatterings;Probability",14,0,14);
-TH1F* scattering_pt3 = new TH1F("scattering_pt3",";n scatterings;Probability",14,0,14);
-TH1F* scattering_pt4 = new TH1F("scattering_pt4",";n scatterings;Probability",14,0,14);
-
 //-------------------------------------------------------
 // Functions
 //-------------------------------------------------------
@@ -104,7 +98,7 @@ void myText(Double_t x,Double_t y,Color_t color,const char *text,Double_t tsize 
 	l.DrawLatex(x,y,text);
 }
 
-void fillPlots(vector<parton> v) {
+void fillPlots(vector<parton> v,TH1F* scattering_pt1,TH1F* scattering_pt2,TH1F* scattering_pt3,TH1F* scattering_pt4) {
 
 	int scatteringcounterpt1 = 0;
 	int scatteringcounterpt2 = 0;
@@ -145,13 +139,13 @@ void fillPlots(vector<parton> v) {
 	}
 }
 
-void processEvent() {
+void processEvent(TH1F* scattering_pt1,TH1F* scattering_pt2,TH1F* scattering_pt3,TH1F* scattering_pt4) {
 
 	for (unsigned int p = 0; p < EventPartons.size(); p++) {
 
 		std::vector<parton> v = EventPartons[p];
 
-		fillPlots(v);
+		fillPlots(v,scattering_pt1,scattering_pt2,scattering_pt3,scattering_pt4);
 	}
 
 	EventPartons.clear();
@@ -162,6 +156,14 @@ void processEvent() {
 //-------------------------------------------------------
 
 void partonScatteringPlots(void) {
+
+	TCanvas* c = new TCanvas("c","Scattering Plots",700,700);
+	gStyle->SetOptStat(0);
+
+	TH1F* scattering_pt1 = new TH1F("scattering_pt1",";n scatterings;Probability",14,0,14);
+	TH1F* scattering_pt2 = new TH1F("scattering_pt2",";n scatterings;Probability",14,0,14);
+	TH1F* scattering_pt3 = new TH1F("scattering_pt3",";n scatterings;Probability",14,0,14);
+	TH1F* scattering_pt4 = new TH1F("scattering_pt4",";n scatterings;Probability",14,0,14);
 
 	ifstream myFileOne;
 	ifstream myFileTwo;
@@ -318,14 +320,12 @@ void partonScatteringPlots(void) {
 
 		myFileTwo.close();
 
-		processEvent();
+		processEvent(scattering_pt1,scattering_pt2,scattering_pt3,scattering_pt4);
 
 	}
 
-	TCanvas* c = new TCanvas("c","Scattering Plots",700,700);
-
+	c->cd();
 	scattering_pt1->Scale(1.0/(scattering_pt1->Integral()));
-	gStyle->SetOptStat(0);
 	scattering_pt1->Draw();
 	scattering_pt2->Scale(1.0/(scattering_pt2->Integral()));
 	scattering_pt2->Draw();
@@ -334,6 +334,7 @@ void partonScatteringPlots(void) {
 	scattering_pt4->Scale(1.0/(scattering_pt4->Integral()));
 	scattering_pt4->Draw();
 
+	cout << "Creating root file......" << endl;
 	TFile *f = new TFile("out_partonScatteringPlots.root","RECREATE");
 	scattering_pt1->Write();
 	scattering_pt2->Write();
