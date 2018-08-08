@@ -5,7 +5,7 @@
 // File 1: parton-initial-afterPropagation.dat
 // File 2: parton-collisionsHistory.dat
 //
-// Created: 08-07-2018
+// Created: 08-08-2018
 //--------------------------------------------------------------------------------------------
 
 #include "TLatex.h"
@@ -86,10 +86,10 @@ float energy2 = 0;
 float energy3 = 0;
 
 // Plots
-TH1F* scattering_pt1 = new TH1F("scattering_pt1",";n scatterings;Probability",20,0,20);
-TH1F* scattering_pt2 = new TH1F("scattering_pt2",";n scatterings;Probability",20,0,20);
-TH1F* scattering_pt3 = new TH1F("scattering_pt3",";n scatterings;Probability",20,0,20);
-TH1F* scattering_pt4 = new TH1F("scattering_pt4",";n scatterings;Probability",20,0,20);
+TH1F* scattering_pt1 = new TH1F("scattering_pt1",";n scatterings;Probability",14,0,14);
+TH1F* scattering_pt2 = new TH1F("scattering_pt2",";n scatterings;Probability",14,0,14);
+TH1F* scattering_pt3 = new TH1F("scattering_pt3",";n scatterings;Probability",14,0,14);
+TH1F* scattering_pt4 = new TH1F("scattering_pt4",";n scatterings;Probability",14,0,14);
 
 //-------------------------------------------------------
 // Functions
