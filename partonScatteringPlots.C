@@ -6,6 +6,7 @@
 // File 2: parton-collisionsHistory.dat
 //
 // Created: 08-09-2018
+// Updated: 08-21-2018
 //--------------------------------------------------------------------------------------------
 
 #include "TLatex.h"
@@ -85,6 +86,9 @@ float energy1 = 0;
 float energy2 = 0;
 float energy3 = 0;
 
+// Delta-pT
+float delta_pT = 0;
+
 //-------------------------------------------------------
 // Functions
 //-------------------------------------------------------
@@ -98,7 +102,7 @@ void myText(Double_t x,Double_t y,Color_t color,const char *text,Double_t tsize 
 	l.DrawLatex(x,y,text);
 }
 
-void fillPlots(vector<parton> v,TH1F* scattering_pt1,TH1F* scattering_pt2,TH1F* scattering_pt3,TH1F* scattering_pt4) {
+void fillPlots(vector<parton> v,TH1F* scattering_pt1,TH1F* scattering_pt2,TH1F* scattering_pt3,TH1F* scattering_pt4,TH1F* change_pt) {
 
 	int scatteringcounterpt1 = 0;
 	int scatteringcounterpt2 = 0;
@@ -137,15 +141,25 @@ void fillPlots(vector<parton> v,TH1F* scattering_pt1,TH1F* scattering_pt2,TH1F* 
 			}
 		}
 	}
+
+	for (unsigned int j = 0; j < v.size(); j++) {
+
+		if (v.size() > 1) {
+
+			delta_pT = v[j].pT - v[j+1].pT;
+
+			change_pt->Fill(delta_pT);
+		}
+	}
 }
 
-void processEvent(TH1F* scattering_pt1,TH1F* scattering_pt2,TH1F* scattering_pt3,TH1F* scattering_pt4) {
+void processEvent(TH1F* scattering_pt1,TH1F* scattering_pt2,TH1F* scattering_pt3,TH1F* scattering_pt4,TH1F* change_pt) {
 
 	for (unsigned int p = 0; p < EventPartons.size(); p++) {
 
 		std::vector<parton> v = EventPartons[p];
 
-		fillPlots(v,scattering_pt1,scattering_pt2,scattering_pt3,scattering_pt4);
+		fillPlots(v,scattering_pt1,scattering_pt2,scattering_pt3,scattering_pt4,change_pt);
 	}
 
 	EventPartons.clear();
@@ -164,6 +178,7 @@ void partonScatteringPlots(void) {
 	TH1F* scattering_pt2 = new TH1F("scattering_pt2",";n scatterings;Probability",20,0,20);
 	TH1F* scattering_pt3 = new TH1F("scattering_pt3",";n scatterings;Probability",20,0,20);
 	TH1F* scattering_pt4 = new TH1F("scattering_pt4",";n scatterings;Probability",20,0,20);
+	TH1F* change_pt = new TH1F("change_pt",";#delta p_{T} [GeV];Counts",1000,-5,5);
 
 	ifstream myFileOne;
 	ifstream myFileTwo;
@@ -320,7 +335,7 @@ void partonScatteringPlots(void) {
 
 		myFileTwo.close();
 
-		processEvent(scattering_pt1,scattering_pt2,scattering_pt3,scattering_pt4);
+		processEvent(scattering_pt1,scattering_pt2,scattering_pt3,scattering_pt4,change_pt);
 
 	}
 
@@ -333,6 +348,7 @@ void partonScatteringPlots(void) {
 	scattering_pt3->Draw();
 	scattering_pt4->Scale(1.0/(scattering_pt4->Integral()));
 	scattering_pt4->Draw();
+	change_pt->Draw();
 
 	cout << "Creating root file......" << endl;
 	TFile *f = new TFile("out_partonScatteringPlots.root","RECREATE");
@@ -340,6 +356,7 @@ void partonScatteringPlots(void) {
 	scattering_pt2->Write();
 	scattering_pt3->Write();
 	scattering_pt4->Write();
+	change_pt->Write();
 
 	f->Close();
 
