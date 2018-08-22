@@ -13,7 +13,7 @@
 // Flagpsi = 1, uses nucleons and tform = const.
 //
 // 07-16-2018
-// Updated 08-06-18 (added new cuts and ability to plot formation time distributions)
+// Updated 08-22-18 (created a new formation time distribution plot)
 //--------------------------------------------------------------------------------------------
 
 #include "TLatex.h"
@@ -1020,6 +1020,8 @@ void masterEllipticFlowCalc(int flagpsi = 0) {
 		formationdist3->Sumw2();
 	TH1F* formationdist4 = new TH1F("formationdist4",";t_{form};Counts",4000,0,4);
 		formationdist4->Sumw2();
+	TH1F* fullformationdist = new TH1F("fullformationdist",";t_{form};Counts",4000,0,4);
+		fullformationdist->Sumw2();
 
 	// Call to file 3.
 	parseFinalPartons(v2plotPpartons,v2plotNpartons,v3plotPpartons,v3plotNpartons,v2plotPpartonseta1,v2plotPpartonsetap5,v2plotNpartonseta1,v2plotNpartonsetap5,keymomentums);
@@ -1039,6 +1041,12 @@ void masterEllipticFlowCalc(int flagpsi = 0) {
 			formationdist4->Fill(partonWTform[i].t);
 		}
 	}
+
+	for (unsigned int j = 0; j < partonWTform.size(); j++) {
+
+		fullformationdist->Fill(partonWTform[j].t);
+	}
+
 	// Call to File 4.
 	parseFinalHadrons(v2plotPhadrons,v2plotNhadrons,v3plotPhadrons,v3plotNhadrons);
 
@@ -1129,12 +1137,14 @@ void masterEllipticFlowCalc(int flagpsi = 0) {
 	formationdist2->Draw();
 	formationdist3->Draw();
 	formationdist4->Draw();
+	fullformationdist->Draw();
 
 	hist1->Write();
 	formationdist1->Write();
 	formationdist2->Write();
 	formationdist3->Write();
 	formationdist4->Write();
+	fullformationdist->Write();
 
 	f->Close();
 
