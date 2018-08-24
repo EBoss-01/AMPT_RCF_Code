@@ -223,7 +223,7 @@ string pkey;
 typedef multimap<string, int> PartonMap;
 
 // Formation time cut array
-float formationtimes[16] = {0, 0.25, 0.50, 0.75, 1.0, 1.25, 1.50, 1.75, 2.0, 2.25, 2.50, 2.75, 3.0, 3.25, 3.50, 3.75, 4.0};
+float formationtimes[17] = {0, 0.25, 0.50, 0.75, 1.0, 1.25, 1.50, 1.75, 2.0, 2.25, 2.50, 2.75, 3.0, 3.25, 3.50, 3.75, 4.0};
 
 //-------------------------------------
 // Functions
