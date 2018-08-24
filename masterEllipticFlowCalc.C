@@ -403,7 +403,7 @@ void findFormationTime(PartonMap &keymomentums, string &pkey, TLorentzVector ev)
 	}
 }
 
-void calculateFlowPartons(TProfile *v2plotPpartons, TProfile *v2plotNpartons, TProfile *v3plotPpartons, TProfile *v3plotNpartons, TProfile *v2plotPpartonseta1, TProfile *v2plotPpartonsetap5, TProfile *v2plotNpartonseta1, TProfile *v2plotNpartonsetap5, TProfile *v2formationtimes[0], TProfile *v2formationtimes[1], TProfile *v2formationtimes[2], TProfile *v2formationtimes[3], TProfile *v2formationtimes[4], TProfile *v2formationtimes[5], TProfile *v2formationtimes[6], TProfile *v2formationtimes[7], TProfile *v2formationtimes[8], TProfile *v2formationtimes[9], TProfile *v2formationtimes[10], TProfile *v2formationtimes[11], TProfile *v2formationtimes[12], TProfile *v2formationtimes[13], TProfile *v2formationtimes[14], TProfile *v2formationtimes[15]) {
+void calculateFlowPartons(TProfile *v2plotPpartons, TProfile *v2plotNpartons, TProfile *v3plotPpartons, TProfile *v3plotNpartons, TProfile *v2plotPpartonseta1, TProfile *v2plotPpartonsetap5, TProfile *v2plotNpartonseta1, TProfile *v2plotNpartonsetap5, TProfile *v2formationtimes0, TProfile *v2formationtimes1, TProfile *v2formationtimes2, TProfile *v2formationtimes3, TProfile *v2formationtimes4, TProfile *v2formationtimes5, TProfile *v2formationtimes6, TProfile *v2formationtimes7, TProfile *v2formationtimes8, TProfile *v2formationtimes9, TProfile *v2formationtimes10, TProfile *v2formationtimes11, TProfile *v2formationtimes12, TProfile *v2formationtimes13, TProfile *v2formationtimes14, TProfile *v2formationtimes15) {
 
 	float v2Ppartons = 0;
 	float v2Npartons = 0;
@@ -471,12 +471,63 @@ void calculateFlowPartons(TProfile *v2plotPpartons, TProfile *v2plotNpartons, TP
 
 		for (unsigned int k = 0; k < partonsforv2.size(); k++) {
 
-		 	if ((partonsforv2[k].t > formationtimes[tstep]) && (partonsforv2[k].t <= formationtimes[tstep+1])) {
+			if (fabs(partonsforv2[k].eta) < 2) {
 
-				increment = partonsforv2[k].evtN;
-				// psi using partons
-				v2Ppartons = TMath::Cos(2*(partonsforv2[k].phi - psi2valuespartons[increment-1]));
-				v2formationtimes[tstep]->Fill(partonsforv2[k].pT,v2Ppartons);
+				if ((partonsforv2[k].t > formationtimes[tstep]) && (partonsforv2[k].t <= formationtimes[tstep+1])) {
+
+					increment = partonsforv2[k].evtN;
+					// psi using partons
+					v2Ppartons = TMath::Cos(2*(partonsforv2[k].phi - psi2valuespartons[increment-1]));
+				}
+
+				if (tstep == 0) {
+					v2formationtimes0->Fill(partonsforv2[k].pT,v2Ppartons);
+				}
+				if (tstep == 1) {
+					v2formationtimes1->Fill(partonsforv2[k].pT,v2Ppartons);
+				}
+				if (tstep == 2) {
+					v2formationtimes2->Fill(partonsforv2[k].pT,v2Ppartons);
+				}
+				if (tstep == 3) {
+					v2formationtimes3->Fill(partonsforv2[k].pT,v2Ppartons);
+				}
+				if (tstep == 4) {
+					v2formationtimes4->Fill(partonsforv2[k].pT,v2Ppartons);
+				}
+				if (tstep == 5) {
+					v2formationtimes5->Fill(partonsforv2[k].pT,v2Ppartons);
+				}
+				if (tstep == 6) {
+					v2formationtimes6->Fill(partonsforv2[k].pT,v2Ppartons);
+				}
+				if (tstep == 7) {
+					v2formationtimes7->Fill(partonsforv2[k].pT,v2Ppartons);
+				}
+				if (tstep == 8) {
+					v2formationtimes8->Fill(partonsforv2[k].pT,v2Ppartons);
+				}
+				if (tstep == 9) {
+					v2formationtimes9->Fill(partonsforv2[k].pT,v2Ppartons);
+				}
+				if (tstep == 10) {
+					v2formationtimes10->Fill(partonsforv2[k].pT,v2Ppartons);
+				}
+				if (tstep == 11) {
+					v2formationtimes11->Fill(partonsforv2[k].pT,v2Ppartons);
+				}
+				if (tstep == 12) {
+					v2formationtimes12->Fill(partonsforv2[k].pT,v2Ppartons);
+				}
+				if (tstep == 13) {
+					v2formationtimes13->Fill(partonsforv2[k].pT,v2Ppartons);
+				}
+				if (tstep == 14) {
+					v2formationtimes14->Fill(partonsforv2[k].pT,v2Ppartons);
+				}
+				if (tstep == 15) {
+					v2formationtimes15->Fill(partonsforv2[k].pT,v2Ppartons);
+				}
 			}
 		}
 	}
@@ -796,7 +847,7 @@ void parseNucleons() {
 
 }
 
-void parseFinalPartons(TProfile *v2plotPpartons,TProfile *v2plotNpartons,TProfile *v3plotPpartons,TProfile *v3plotNpartons, TProfile *v2plotPpartonseta1, TProfile *v2plotPpartonsetap5, TProfile *v2plotNpartonseta1, TProfile *v2plotNpartonsetap5, PartonMap &keymomentums, TProfile* v2formationtimes[0], TProfile* v2formationtimes[1], TProfile *v2formationtimes[2], TProfile *v2formationtimes[3], TProfile *v2formationtimes[4], TProfile *v2formationtimes[5], TProfile *v2formationtimes[6], TProfile *v2formationtimes[7], TProfile *v2formationtimes[8], TProfile *v2formationtimes[9], TProfile *v2formationtimes[10], TProfile *v2formationtimes[11], TProfile *v2formationtimes[12], TProfile *v2formationtimes[13], TProfile *v2formationtimes[14], TProfile *v2formationtimes[15]) {
+void parseFinalPartons(TProfile *v2plotPpartons,TProfile *v2plotNpartons,TProfile *v3plotPpartons,TProfile *v3plotNpartons, TProfile *v2plotPpartonseta1, TProfile *v2plotPpartonsetap5, TProfile *v2plotNpartonseta1, TProfile *v2plotNpartonsetap5, PartonMap &keymomentums, TProfile *v2formationtimes0, TProfile *v2formationtimes1, TProfile *v2formationtimes2, TProfile *v2formationtimes3, TProfile *v2formationtimes4, TProfile *v2formationtimes5, TProfile *v2formationtimes6, TProfile *v2formationtimes7, TProfile *v2formationtimes8, TProfile *v2formationtimes9, TProfile *v2formationtimes10, TProfile *v2formationtimes11, TProfile *v2formationtimes12, TProfile *v2formationtimes13, TProfile *v2formationtimes14, TProfile *v2formationtimes15) {
 
 	string line2;
 	int evt;
@@ -888,7 +939,7 @@ void parseFinalPartons(TProfile *v2plotPpartons,TProfile *v2plotNpartons,TProfil
 
 			if (counterparton == participantparton) {
 
-				calculateFlowPartons(v2plotPpartons,v2plotNpartons,v3plotPpartons,v3plotNpartons,v2plotPpartonseta1,v2plotPpartonsetap5,v2plotNpartonseta1,v2plotNpartonsetap5,newfinalpartons,v2formationtimes[0],v2formationtimes[1],v2formationtimes[2],v2formationtimes[3],v2formationtimes[4],v2formationtimes[5],v2formationtimes[6],v2formationtimes[7],v2formationtimes[8],v2formationtimes[9],v2formationtimes[10],v2formationtimes[11],v2formationtimes[12],v2formationtimes[13],v2formationtimes[14],v2formationtimes[15]);
+				calculateFlowPartons(v2plotPpartons,v2plotNpartons,v3plotPpartons,v3plotNpartons,v2plotPpartonseta1,v2plotPpartonsetap5,v2plotNpartonseta1,v2plotNpartonsetap5,v2formationtimes0,v2formationtimes1,v2formationtimes2,v2formationtimes3,v2formationtimes4,v2formationtimes5,v2formationtimes6,v2formationtimes7,v2formationtimes8,v2formationtimes9,v2formationtimes10,v2formationtimes11,v2formationtimes12,v2formationtimes13,v2formationtimes14,v2formationtimes15);
 
 				finalstate.clear();
 				partonsforv2.clear();
@@ -1021,11 +1072,22 @@ void masterEllipticFlowCalc(int flagpsi = 0) {
 	TProfile *v2plotPpartonsetap5 = new TProfile("v2plotPpartonsetap5","v_{2} vs p_{T}",20,0,2.5,-1,1);
 	TProfile *v2plotNpartonsetap5 = new TProfile("v2plotNpartonsetap5","v_{2} vs p_{T}",20,0,2.5,-1,1);
 
-	TProfile *v2formationtimes[16];
-
-	for (unsigned int place = 0; place < 16; place++) {
-		v2formationtimes[place] = new TProfile(Form("v2formationtimes[%d]",place), "v_{2} vs p_{T}",20,0,2.5,-1,1);
-	}
+	TProfile *v2formationtimes0 = new TProfile("v2formationtimes0", "v_{2} vs p_{T}",20,0,2.5,-1,1);
+	TProfile *v2formationtimes1 = new TProfile("v2formationtimes1", "v_{2} vs p_{T}",20,0,2.5,-1,1);
+	TProfile *v2formationtimes2 = new TProfile("v2formationtimes2", "v_{2} vs p_{T}",20,0,2.5,-1,1);
+	TProfile *v2formationtimes3 = new TProfile("v2formationtimes3", "v_{2} vs p_{T}",20,0,2.5,-1,1);
+	TProfile *v2formationtimes4 = new TProfile("v2formationtimes4", "v_{2} vs p_{T}",20,0,2.5,-1,1);
+	TProfile *v2formationtimes5 = new TProfile("v2formationtimes5", "v_{2} vs p_{T}",20,0,2.5,-1,1);
+	TProfile *v2formationtimes6 = new TProfile("v2formationtimes6", "v_{2} vs p_{T}",20,0,2.5,-1,1);
+	TProfile *v2formationtimes7 = new TProfile("v2formationtimes7", "v_{2} vs p_{T}",20,0,2.5,-1,1);
+	TProfile *v2formationtimes8 = new TProfile("v2formationtimes8", "v_{2} vs p_{T}",20,0,2.5,-1,1);
+	TProfile *v2formationtimes9 = new TProfile("v2formationtimes9", "v_{2} vs p_{T}",20,0,2.5,-1,1);
+	TProfile *v2formationtimes10 = new TProfile("v2formationtimes10", "v_{2} vs p_{T}",20,0,2.5,-1,1);
+	TProfile *v2formationtimes11 = new TProfile("v2formationtimes11", "v_{2} vs p_{T}",20,0,2.5,-1,1);
+	TProfile *v2formationtimes12 = new TProfile("v2formationtimes12", "v_{2} vs p_{T}",20,0,2.5,-1,1);
+	TProfile *v2formationtimes13 = new TProfile("v2formationtimes13", "v_{2} vs p_{T}",20,0,2.5,-1,1);
+	TProfile *v2formationtimes14 = new TProfile("v2formationtimes14", "v_{2} vs p_{T}",20,0,2.5,-1,1);
+	TProfile *v2formationtimes15 = new TProfile("v2formationtimes15", "v_{2} vs p_{T}",20,0,2.5,-1,1);
 
 	TCanvas *c1 = new TCanvas("c1","v3 calculations",700,700);
 	gStyle->SetOptStat(0);
@@ -1050,7 +1112,7 @@ void masterEllipticFlowCalc(int flagpsi = 0) {
 		fullformationdist->Sumw2();
 
 	// Call to file 3.
-	parseFinalPartons(v2plotPpartons,v2plotNpartons,v3plotPpartons,v3plotNpartons,v2plotPpartonseta1,v2plotPpartonsetap5,v2plotNpartonseta1,v2plotNpartonsetap5,keymomentums,v2formationtimes[0],v2formationtimes[1],v2formationtimes[2],v2formationtimes[3],v2formationtimes[4],v2formationtimes[5],v2formationtimes[6],v2formationtimes[7],v2formationtimes[8],v2formationtimes[9],v2formationtimes[10],v2formationtimes[11],v2formationtimes[12],v2formationtimes[13],v2formationtimes[14],v2formationtimes[15]);
+	parseFinalPartons(v2plotPpartons,v2plotNpartons,v3plotPpartons,v3plotNpartons,v2plotPpartonseta1,v2plotPpartonsetap5,v2plotNpartonseta1,v2plotNpartonsetap5,keymomentums,v2formationtimes0,v2formationtimes1,v2formationtimes2,v2formationtimes3,v2formationtimes4,v2formationtimes5,v2formationtimes6,v2formationtimes7,v2formationtimes8,v2formationtimes9,v2formationtimes10,v2formationtimes11,v2formationtimes12,v2formationtimes13,v2formationtimes14,v2formationtimes15);
 
 	for (unsigned int i = 0; i < partonWTform.size(); i++) {
 
@@ -1165,12 +1227,69 @@ void masterEllipticFlowCalc(int flagpsi = 0) {
 	formationdist4->Draw();
 	fullformationdist->Draw();
 
-	for (unsigned int plots = 0; plots < 16; plots++) {
+	v2formationtimes0->SetLineWidth(2);
+	v2formationtimes0->SetLineColor(kBlack);
+	v2formationtimes0->Draw();
 
-		v2formationtimes[plots]->SetLineWidth(2);
-		v2formationtimes[plots]->SetLineColor(kBlack);
-		v2formationtimes[plots]->Draw();
-	}
+	v2formationtimes1->SetLineWidth(2);
+	v2formationtimes1->SetLineColor(kBlack);
+	v2formationtimes1->Draw();
+
+	v2formationtimes2->SetLineWidth(2);
+	v2formationtimes2->SetLineColor(kBlack);
+	v2formationtimes2->Draw();
+
+	v2formationtimes3->SetLineWidth(2);
+	v2formationtimes3->SetLineColor(kBlack);
+	v2formationtimes3->Draw();
+
+	v2formationtimes4->SetLineWidth(2);
+	v2formationtimes4->SetLineColor(kBlack);
+	v2formationtimes4->Draw();
+
+	v2formationtimes5->SetLineWidth(2);
+	v2formationtimes5->SetLineColor(kBlack);
+	v2formationtimes5->Draw();
+
+	v2formationtimes6->SetLineWidth(2);
+	v2formationtimes6->SetLineColor(kBlack);
+	v2formationtimes6->Draw();
+
+	v2formationtimes7->SetLineWidth(2);
+	v2formationtimes7->SetLineColor(kBlack);
+	v2formationtimes7->Draw();
+
+	v2formationtimes8->SetLineWidth(2);
+	v2formationtimes8->SetLineColor(kBlack);
+	v2formationtimes8->Draw();
+
+	v2formationtimes9->SetLineWidth(2);
+	v2formationtimes9->SetLineColor(kBlack);
+	v2formationtimes9->Draw();
+
+	v2formationtimes10->SetLineWidth(2);
+	v2formationtimes10->SetLineColor(kBlack);
+	v2formationtimes10->Draw();
+
+	v2formationtimes11->SetLineWidth(2);
+	v2formationtimes11->SetLineColor(kBlack);
+	v2formationtimes11->Draw();
+
+	v2formationtimes12->SetLineWidth(2);
+	v2formationtimes12->SetLineColor(kBlack);
+	v2formationtimes12->Draw();
+
+	v2formationtimes13->SetLineWidth(2);
+	v2formationtimes13->SetLineColor(kBlack);
+	v2formationtimes13->Draw();
+
+	v2formationtimes14->SetLineWidth(2);
+	v2formationtimes14->SetLineColor(kBlack);
+	v2formationtimes14->Draw();
+
+	v2formationtimes15->SetLineWidth(2);
+	v2formationtimes15->SetLineColor(kBlack);
+	v2formationtimes15->Draw();
 
 	hist1->Write();
 	formationdist1->Write();
@@ -1178,11 +1297,22 @@ void masterEllipticFlowCalc(int flagpsi = 0) {
 	formationdist3->Write();
 	formationdist4->Write();
 	fullformationdist->Write();
-
-	for (unsigned int wplot = 0; wplot < 16; wplot++) {
-
-		v2formationtimes[wplot]->Write();
-	}
+	v2formationtimes0->Write();
+	v2formationtimes1->Write();
+	v2formationtimes2->Write();
+	v2formationtimes3->Write();
+	v2formationtimes4->Write();
+	v2formationtimes5->Write();
+	v2formationtimes6->Write();
+	v2formationtimes7->Write();
+	v2formationtimes8->Write();
+	v2formationtimes9->Write();
+	v2formationtimes10->Write();
+	v2formationtimes11->Write();
+	v2formationtimes12->Write();
+	v2formationtimes13->Write();
+	v2formationtimes14->Write();
+	v2formationtimes15->Write();
 
 	f->Close();
 
