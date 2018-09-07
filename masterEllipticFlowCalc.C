@@ -13,7 +13,7 @@
 // Flagpsi = 1, uses nucleons and tform = const.
 //
 // 07-16-2018
-// Updated 08-24-18 (created a new formation time distribution plot)
+// Updated 09-07-18 (found bug in formation time plots.)
 //--------------------------------------------------------------------------------------------
 
 #include "TLatex.h"
@@ -478,55 +478,56 @@ void calculateFlowPartons(TProfile *v2plotPpartons, TProfile *v2plotNpartons, TP
 					increment = partonsforv2[k].evtN;
 					// psi using partons
 					v2Ppartons = TMath::Cos(2*(partonsforv2[k].phi - psi2valuespartons[increment-1]));
+					v2Npartons = TMath::Cos(2*(partonsforv2[k].phi - psi2valuesnucleon[increment-1]));
 				}
 
 				if (tstep == 0) {
-					v2formationtimes0->Fill(partonsforv2[k].pT,v2Ppartons);
+					v2formationtimes0->Fill(partonsforv2[k].pT,v2Npartons);
 				}
 				if (tstep == 1) {
-					v2formationtimes1->Fill(partonsforv2[k].pT,v2Ppartons);
+					v2formationtimes1->Fill(partonsforv2[k].pT,v2Npartons);
 				}
 				if (tstep == 2) {
-					v2formationtimes2->Fill(partonsforv2[k].pT,v2Ppartons);
+					v2formationtimes2->Fill(partonsforv2[k].pT,v2Npartons);
 				}
 				if (tstep == 3) {
-					v2formationtimes3->Fill(partonsforv2[k].pT,v2Ppartons);
+					v2formationtimes3->Fill(partonsforv2[k].pT,v2Npartons);
 				}
 				if (tstep == 4) {
-					v2formationtimes4->Fill(partonsforv2[k].pT,v2Ppartons);
+					v2formationtimes4->Fill(partonsforv2[k].pT,v2Npartons);
 				}
 				if (tstep == 5) {
-					v2formationtimes5->Fill(partonsforv2[k].pT,v2Ppartons);
+					v2formationtimes5->Fill(partonsforv2[k].pT,v2Npartons);
 				}
 				if (tstep == 6) {
-					v2formationtimes6->Fill(partonsforv2[k].pT,v2Ppartons);
+					v2formationtimes6->Fill(partonsforv2[k].pT,v2Npartons);
 				}
 				if (tstep == 7) {
-					v2formationtimes7->Fill(partonsforv2[k].pT,v2Ppartons);
+					v2formationtimes7->Fill(partonsforv2[k].pT,v2Npartons);
 				}
 				if (tstep == 8) {
-					v2formationtimes8->Fill(partonsforv2[k].pT,v2Ppartons);
+					v2formationtimes8->Fill(partonsforv2[k].pT,v2Npartons);
 				}
 				if (tstep == 9) {
-					v2formationtimes9->Fill(partonsforv2[k].pT,v2Ppartons);
+					v2formationtimes9->Fill(partonsforv2[k].pT,v2Npartons);
 				}
 				if (tstep == 10) {
-					v2formationtimes10->Fill(partonsforv2[k].pT,v2Ppartons);
+					v2formationtimes10->Fill(partonsforv2[k].pT,v2Npartons);
 				}
 				if (tstep == 11) {
-					v2formationtimes11->Fill(partonsforv2[k].pT,v2Ppartons);
+					v2formationtimes11->Fill(partonsforv2[k].pT,v2Npartons);
 				}
 				if (tstep == 12) {
-					v2formationtimes12->Fill(partonsforv2[k].pT,v2Ppartons);
+					v2formationtimes12->Fill(partonsforv2[k].pT,v2Npartons);
 				}
 				if (tstep == 13) {
-					v2formationtimes13->Fill(partonsforv2[k].pT,v2Ppartons);
+					v2formationtimes13->Fill(partonsforv2[k].pT,v2Npartons);
 				}
 				if (tstep == 14) {
-					v2formationtimes14->Fill(partonsforv2[k].pT,v2Ppartons);
+					v2formationtimes14->Fill(partonsforv2[k].pT,v2Npartons);
 				}
 				if (tstep == 15) {
-					v2formationtimes15->Fill(partonsforv2[k].pT,v2Ppartons);
+					v2formationtimes15->Fill(partonsforv2[k].pT,v2Npartons);
 				}
 			}
 		}
