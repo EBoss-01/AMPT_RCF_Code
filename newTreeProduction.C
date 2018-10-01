@@ -246,7 +246,7 @@ void parseNucleons() {
 	float junk[3];
 	ifstream myFileThree;
 
-	myFileThree.open("/Users/erinbossard/Summer18/AMPT/Formation_Time/Tree_Code/npart-xy.dat");
+	myFileThree.open("ana/npart-xy.dat");
 
 	if (!myFileThree) {
 		cout << "Unable to open npart-xy." << endl;
@@ -438,7 +438,7 @@ void newTreeProduction(void) {
 
 	parseNucleons();
 
-	myInitialFileInfo.open("/Users/erinbossard/Summer18/AMPT/Formation_Time/Tree_Code/parton-initial-afterPropagation.dat");
+	myInitialFileInfo.open("ana/parton-initial-afterPropagation.dat");
 
 	if (!myInitialFileInfo) {
 	// This will let me know if the file fails to open and specifically which file.
@@ -538,7 +538,7 @@ void newTreeProduction(void) {
 		TLorentzVector vb4;
 
 		// This is where the evolution file is opened each time.
-		myEvolutionFile.open("/Users/erinbossard/Summer18/AMPT/Formation_Time/Tree_Code/parton-collisionsHistory.dat");
+		myEvolutionFile.open("ana/parton-collisionsHistory.dat");
 
 		if (!myEvolutionFile) {
 		// As before this will let me know if this specific file fails to open.
