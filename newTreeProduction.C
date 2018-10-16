@@ -311,7 +311,7 @@ void calculateParticipantPlanePartons() {
 
 		float phivalue = TMath::ATan2(v[i].y, v[i].x);
 		float rvalue = TMath::Sqrt(pow(v[i].x,2) + pow(v[i].y,2));
-		//Compnent calculations for psi.
+		//Component calculations for psi.
 		q2x = q2x + pow(rvalue,2)*TMath::Cos(2*phivalue);
 		q2y = q2y + pow(rvalue,2)*TMath::Sin(2*phivalue);
 		rsquare = rsquare + pow(rvalue,2);
