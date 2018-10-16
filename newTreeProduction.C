@@ -1,11 +1,15 @@
 //-------------------------------------------------------------------------------------------------
-//This code is used to create TTrees of the parton Evolution and calculate the participant planes.
+// This code is used to create TTrees of the parton Evolution and calculate the participant planes.
 //
-//File 1: parton-initial-afterPropagation.dat (used for parton plane and initial values)
-//File 2: parton-collisionsHistory.dat (used to follow parton evolution)
-//File 3: npart-xy.dat (uses nucleons for Psi for set tform = const)
+// File 1: parton-initial-afterPropagation.dat (used for parton plane and initial values)
+// File 2: parton-collisionsHistory.dat (used to follow parton evolution)
+// File 3: npart-xy.dat (uses nucleons for Psi for set tform = const)
+// File 4: parton-after-coalescence.dat (will be used for final momentum and hadron ID)
 //
-//09-26-18
+// Multimap just uses parton-after-coalescence.dat and the key is the last scattering.
+//
+// 09-26-18
+// Updated 10-16-18 (added code to ignore additional iterations where applicable and comments)
 //-------------------------------------------------------------------------------------------------
 
 #include "TLatex.h"
@@ -70,8 +74,14 @@ struct parton {
 	float y;
 	float z;
 	float t;
-//Parton mass in GeV
+// Parton mass in GeV
 	float m;
+/*// Final State
+	float Finalpx;
+	float Finalpy;
+	float Finalpz;
+// Final hadron
+	int hadron;*/
 
 };
 
@@ -107,6 +117,14 @@ vector<float> psi2valuesnucleon;
 float psi2partons;
 float psi2nucleon;
 
+// Vaiables needed for multimap
+int Pevent = 0;
+float Ppx = 0;
+float Ppy = 0;
+float Ppz = 0;
+string pkey;
+typedef multimap<string, int> PartonMap;
+
 //----------------------------------
 //Functions
 //----------------------------------
@@ -120,6 +138,80 @@ void myText(Double_t x,Double_t y,Color_t color,const char *text,Double_t tsize 
 	l.DrawLatex(x,y,text);
 }
 
+// This function searches the multimap with the determined key.
+void findHadronValue(PartonMap &keymomentums, string &pkey, float &hadronnumber) {
+
+	PartonMap::iterator it = keymomentums.find(pkey);
+	hadronnumber = keymomentums.find(pkey)->second;
+}
+
+// This function fills the mutltimap in order to find hadron formation information. 
+void parseCoalescenceFile(PartonMap &keymomentums) {
+
+	string line2;
+	int evt;
+	int npartons;
+	int nbaryons;
+	int nmesons;
+	float imparm;
+	int stuff[5];
+
+	ifstream myFileFour;
+
+	myFileFour.open("ana/parton-after-coalescence.dat");
+
+	if (!myFileFour) {
+		cout << "Unable to open parton-after-coalescence file." << endl;
+		return;
+	}
+
+	else {
+		cout << "Successfully opened parton-after-coalescence file." << endl;
+	}
+
+	int eventcounter = 0;
+	int participantparton = 0;
+	int counterparton = 0;
+
+	while (std::getline(myFileFour, line2)) {
+
+		if (!myFileFour) break;
+
+		stringstream eventheader(line2);
+		string intermediate;
+
+		vector<float> token;
+
+		while (getline(eventheader, intermediate, ' ')) {
+
+			if (intermediate != "") {
+				token.push_back(atof(intermediate.c_str()));
+			}
+		}
+
+		if (token.size() == 10) {
+			eventcounter++;
+			participantparton = token[1];
+		}
+
+		else if ((token.size() == 8) || (token.size() == 7)) {
+
+			Pevent = eventcounter;
+			Ppx = token[1];
+			Ppy = token[2];
+			Ppz = token[3];
+
+			pkey = Form("%d*%g*%g*%g", Pevent, Ppx, Ppy, Ppz);
+			keymomentums.insert(make_pair(pkey, token[6]));
+		}
+	}
+
+	cout << "Closing parton-after-coalescence file." << endl;
+
+	myFileFour.close();
+}
+
+// Function used to calculate the participant plane from Nucleons. Needed for set formation times. 
 void calculateParticipantPlaneNucleons() {
 
 	int nucleoncounter = 0;
@@ -130,6 +222,7 @@ void calculateParticipantPlaneNucleons() {
 	float Nq2y = 0;
 	float Nrsquare = 0;
 
+	// Needed for smearing.
 	TF1 *fradial = new TF1("fradial","x*TMath::Exp(-x*x/(2*[0]*[0]))",0.0,2.0);
 	fradial->SetParameter(0,0.4);
 
@@ -137,6 +230,7 @@ void calculateParticipantPlaneNucleons() {
 
 	vector<nucleon> vN = initialnucleon;
 
+	// All center of mass frame adjustments.
 	for (unsigned int k = 0; k < vN.size(); k++) {
 		if (vN[k].status > 0) {
 			Ncmx = Ncmx + vN[k].x;
@@ -146,6 +240,7 @@ void calculateParticipantPlaneNucleons() {
 		}
 	}
 
+	// Averaging the center of mass.
 	Ncmx = Ncmx/(float)Ncmcounter;
 	Ncmy = Ncmy/(float)Ncmcounter;
 
@@ -179,12 +274,14 @@ void calculateParticipantPlaneNucleons() {
 
 	Nrsquare = Nrsquare/(float)nucleoncounter;
 
+	// Actual participant plane calculation. 
 	psi2nucleon = (TMath::ATan2(Nq2y, Nq2x)/2.0) + (TMath::Pi()/2.0);
 
 	psi2valuesnucleon.push_back(psi2nucleon);
 
 }
 
+// Funcation used to calculate the participant plane using Partons.
 void calculateParticipantPlanePartons() {
 
 	int cmcounter = 0;
@@ -196,6 +293,7 @@ void calculateParticipantPlanePartons() {
 
 	vector<parton> v = initialpartons;
 
+	// Used to begin adjusting into center of mass frame.
 	for (unsigned int k = 0; k < v.size(); k++) {
 		cmx = cmx + v[k].x;
 		cmy = cmy + v[k].y;
@@ -232,6 +330,7 @@ void calculateParticipantPlanePartons() {
 	psi2valuespartons.push_back(psi2partons);
 }
 
+// This function is used to calculate the Nucleon Participant Plane.
 void parseNucleons() {
 
 	// Variables needed to read header.
@@ -246,6 +345,7 @@ void parseNucleons() {
 	float junk[3];
 	ifstream myFileThree;
 
+	// File needed for nucleon geometry. 
 	myFileThree.open("ana/npart-xy.dat");
 
 	if (!myFileThree) {
@@ -263,17 +363,15 @@ void parseNucleons() {
 
 		stringstream header(line1);
 
+		// This reads the headers for each event.
 		if (header >> eventnumber >> Niteration >> atomicMproj >> atomicMtarg >> impactparm) {
 
-			//cout << eventnumber << endl;
-
+			// This prevents duplication of events.
 			if (Niteration > 0) {
 				continue;
 			}
 
-			int partoncounter = 0;
-
-			// Loop for filling
+			// Loop for filling vector.
 			for (int i = 0; i < (atomicMproj + atomicMtarg); i++) {
 
 				myFileThree >> space[0] >> space[1] >> sequence >> stat >> junk[0] >> junk[1] >> junk[2];
@@ -287,12 +385,9 @@ void parseNucleons() {
 
 				initialnucleon.push_back(nucinitial);
 
-				if (stat > 0 && sequence >> 0) {
-					partoncounter = partoncounter;
-					partoncounter++;
-				}
 			}
 
+			// Call to function used to calculate the psi value for nucleons.
 			calculateParticipantPlaneNucleons();
 
 			initialnucleon.clear();
@@ -303,8 +398,8 @@ void parseNucleons() {
 
 }
 
-// This function is used to do the position calculations and will return x,y coordinates at every time.
-void calculatePosition (vector<parton> v, int &actualevent, int &partonid, float &NPsi, float &PPsi, float &initialpx, float &initialpy, float &initialpz, float &formationt, float &initialx, float &initialy, float &initialz, float &initialmass, int &scatteringn, float scatteringpx[], float scatteringpy[], float scatteringpz[], float scatteringt[], float scatteringx[], float scatteringy[], float scatteringz[]) {
+// This function is used to pull in the positions for every parton and scattering. The banches of TTree are filled here.
+void calculatePosition (vector<parton> v, int &actualevent, int &partonid, float &NPsi, float &PPsi, float &initialpx, float &initialpy, float &initialpz, float &formationt, float &initialx, float &initialy, float &initialz, float &initialmass, int &scatteringn, float scatteringpx[], float scatteringpy[], float scatteringpz[], float scatteringt[], float scatteringx[], float scatteringy[], float scatteringz[], float &finalpx, float &finalpy, float &finalpz, int &formedhadron, PartonMap &keymomentums) {
 
 	float x0, y0;
 
@@ -312,6 +407,28 @@ void calculatePosition (vector<parton> v, int &actualevent, int &partonid, float
 	for (unsigned int i = 0; i < v.size(); i++) {
 
 		scatteringn = v.size()-1;
+
+		if (i == v.size()-1) {
+
+			// Seting up the multimap key elements. 
+			Pevent = eventnumber;
+			Ppx = v[i].px;
+			Ppy = v[i].py;
+			Ppz = v[i].pz;
+
+			pkey = Form("%d*%g*%g*%g", Pevent, Ppx, Ppy, Ppz);
+
+			float hadronnumber;
+			// Call to find the hadron value.
+			findHadronValue(keymomentums, pkey, hadronnumber);
+
+			// Fills the branches for the final parton position and hadron value.
+			finalpx = v[i].px;
+			finalpy = v[i].py;
+			finalpz = v[i].pz;
+			formedhadron = hadronnumber;
+
+		}
 
 
 		// Determine the initial position of the parton.
@@ -350,23 +467,23 @@ void calculatePosition (vector<parton> v, int &actualevent, int &partonid, float
 
 }
 
-// This function will loop over each parton and then calculate the positions at every given moment in time. 
-void processEvent(int &actualevent, int &partonid, float &NPsi, float &PPsi, float &initialpx, float &initialpy, float &initialpz, float &formationt, float &initialx, float &initialy, float &initialz, float &initialmass, int &scatteringn, float scatteringpx[], float scatteringpy[], float scatteringpz[], float scatteringt[], float scatteringx[], float scatteringy[], float scatteringz[]/*,TCanvas* c1, TH2F* Collisionplots, TCanvas* c2, TH2F* Angleplots*/) {
+// This function will loop over each parton and then fill the branches of the TTree. 
+void processEvent(int &actualevent, int &partonid, float &NPsi, float &PPsi, float &initialpx, float &initialpy, float &initialpz, float &formationt, float &initialx, float &initialy, float &initialz, float &initialmass, int &scatteringn, float scatteringpx[], float scatteringpy[], float scatteringpz[], float scatteringt[], float scatteringx[], float scatteringy[], float scatteringz[], float &finalpx, float &finalpy, float &finalpz, int &formedhadron, PartonMap &keymomentums) {
 	
+	// This is a call for the calculation of parton plane.
 	calculateParticipantPlanePartons();
 
-	//cout << psi2valuespartons.size() << "Psi value: " << psi2valuespartons[0] << endl;
-
-	// This counter used to prevent the tree from being filled more than it should be.
+	// This counter used to prevent the tree from being filled more than needed.
 	unsigned int counter1 = 0;
 
-		// Put Parton Loop here. At each timestep each parton is looped over. 
+		// Put Parton Loop here. Each parton is looped over here to calculate the needed information. 
 		
 		for (unsigned int p = 0; p < EventPartons.size(); p++) {
 
 			std::vector<parton> v = EventPartons[p];
 
-			calculatePosition(v,actualevent,partonid,NPsi,PPsi,initialpx,initialpy,initialpz,formationt,initialx,initialy,initialz,initialmass,scatteringn,scatteringpx,scatteringpy,scatteringpz,scatteringt,scatteringx,scatteringy,scatteringz);
+			// Call to function to fill the tree branches.
+			calculatePosition(v,actualevent,partonid,NPsi,PPsi,initialpx,initialpy,initialpz,formationt,initialx,initialy,initialz,initialmass,scatteringn,scatteringpx,scatteringpy,scatteringpz,scatteringt,scatteringx,scatteringy,scatteringz,finalpx,finalpy,finalpz,formedhadron,keymomentums);
 
 			counter1 = counter1;
 			counter1++;
@@ -381,14 +498,23 @@ void processEvent(int &actualevent, int &partonid, float &NPsi, float &PPsi, flo
 
 		}
 
+	// Clearing vectors to prevent problem information.
 	EventPartons.clear();
 	psi2valuespartons.clear();
 }
 
-// This will be my attempt to read in the files that I will be using. 
+//-----------------------------------------------------
+// Main Code
+//-----------------------------------------------------
 void newTreeProduction(void) {
 
-	f1 = new TFile("AMPT_TTree_out.root", "RECREATE");
+	// This sets up the multimap for use.
+	PartonMap keymomentums;
+
+	// Call to function that fills the multimap.
+	parseCoalescenceFile(keymomentums);
+
+	f1 = new TFile("New_AMPT_TTree_out.root", "RECREATE");
 
 	const Int_t maxArrayLength = 10000;
 	Int_t actualevent;
@@ -411,8 +537,12 @@ void newTreeProduction(void) {
 	Float_t scatteringx[maxArrayLength];
 	Float_t scatteringy[maxArrayLength];
 	Float_t scatteringz[maxArrayLength];
+	Float_t finalpx;
+	Float_t finalpy;
+	Float_t finalpz;
+	Int_t formedhadron;
 
-	tree = new TTree("tree", "A Peach Tree");
+	tree = new TTree("tree", "A juicy apple tree");
 	tree->Branch("event_number",&actualevent,"event_number/I");
 	tree->Branch("parton_id",&partonid,"parton_id/I");
 	tree->Branch("nucleon_plane",&NPsi,"nucleon_plane/F");
@@ -433,9 +563,14 @@ void newTreeProduction(void) {
 	tree->Branch("scattering_x",scatteringx,"scattering_x[scattering_n]/F");
 	tree->Branch("scattering_y",scatteringy,"scattering_y[scattering_n]/F");
 	tree->Branch("scattering_z",scatteringz,"scattering_z[scattering_n]/F");
+	tree->Branch("final_px",&finalpx,"final_px/F");
+	tree->Branch("final_py",&finalpy,"final_py/F");
+	tree->Branch("final_pz",&finalpz,"final_pz/F");
+	tree->Branch("hadron_formed",&formedhadron,"hadron_formed/I");
 	ifstream myInitialFileInfo;
 	ifstream myEvolutionFile;
 
+	// Call to function that begins Nucleon Plane calculation. 
 	parseNucleons();
 
 	myInitialFileInfo.open("ana/parton-initial-afterPropagation.dat");
@@ -466,6 +601,10 @@ void newTreeProduction(void) {
 		int particleNC;
 
 		myInitialFileInfo >> eventnumber >> iterationN >> nPartons >> nBaryons >> nMesons >> particleC >> particleNC;
+
+		if (iterationN > 0) {
+			continue;
+		}
 
 		// This line prevents the file from trying to read the last line multiple times.
 		if (!myInitialFileInfo) break;
@@ -557,7 +696,12 @@ void newTreeProduction(void) {
 			stringstream heading(line);
 			string description;
 
+			// Reading the file in.
 			if (heading >> description >> evt >> junk1 >> partonindex1 >> partonindex2) {
+
+				if (junk1 > 0) {
+					continue;
+				}
 
 				if (evt == eventnumber) {
 
@@ -604,7 +748,7 @@ void newTreeProduction(void) {
 		myEvolutionFile.close();
 
 		// Call function that Processes the Event.
-		processEvent(actualevent,partonid,NPsi,PPsi,initialpx,initialpy,initialpz,formationt,initialx,initialy,initialz,initialmass,scatteringn,scatteringpx,scatteringpy,scatteringpz,scatteringt,scatteringx,scatteringy,scatteringz);
+		processEvent(actualevent,partonid,NPsi,PPsi,initialpx,initialpy,initialpz,formationt,initialx,initialy,initialz,initialmass,scatteringn,scatteringpx,scatteringpy,scatteringpz,scatteringt,scatteringx,scatteringy,scatteringz,finalpx,finalpy,finalpz,formedhadron,keymomentums);
 
 	}
 
@@ -614,4 +758,3 @@ void newTreeProduction(void) {
 	myInitialFileInfo.close();
 	return;
 }
-
