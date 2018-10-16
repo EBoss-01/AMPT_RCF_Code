@@ -684,10 +684,10 @@ void newTreeProduction(void) {
 			cout << "Unable to open file parton-collisionsHistory.dat" << endl;
 			return;
 		}
-		else {
+		/*else {
 		// This is here simply to confirm that this file opened successfully as well.
 			cout << "Successfully opened parton-collisionsHistory.dat" << endl;
-		}
+		}*/
 
 		while (std::getline(myEvolutionFile,line)) {
 
